@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foldesk · 产品可视化说明</title>
+<style>
+  :root{
+    --blue:#0F66F2;
+    --blue-soft:rgba(15,102,242,.10);
+    --red:#F24533;
+    --red-soft:rgba(242,69,51,.10);
+    --ink:#1d1d1f;
+    --ink-2:#6b6b70;
+    --line:rgba(0,0,0,.09);
+    --bg:#f5f5f7;
+    --card:#ffffff;
+    --radius:14px;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(255,255,255,.8);
+    backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--line);padding:12px 28px;display:flex;align-items:center;gap:12px;
+  }
+  .brand-logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--blue),#5aa0ff);
+    display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px;box-shadow:0 2px 6px rgba(15,102,242,.4)}
+  .topbar h1{font-size:17px;font-weight:700}
+  .topbar .sub{font-size:13px;color:var(--ink-2)}
+  .topbar .grow{flex:1}
+  .topbar a{font-size:13px;color:var(--blue);text-decoration:none;padding:6px 10px;border-radius:8px}
+  .topbar a:hover{background:var(--blue-soft)}
+
+  /* ---------- layout ---------- */
+  .wrap{display:flex;max-width:1240px;margin:0 auto;padding:0 20px}
+  .toc{position:sticky;top:64px;align-self:flex-start;width:200px;flex:none;padding:24px 8px;font-size:13.5px}
+  .toc a{display:block;padding:7px 12px;border-radius:9px;color:var(--ink-2);text-decoration:none;margin-bottom:2px}
+  .toc a:hover{background:#fff;color:var(--ink)}
+  .toc a.active{background:var(--blue-soft);color:var(--blue);font-weight:600}
+  .toc .grp{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#a0a0a6;margin:14px 12px 4px}
+  .content{flex:1;min-width:0;padding:24px 8px 80px}
+
+  /* ---------- hero ---------- */
+  .hero{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;margin-bottom:26px}
+  .hero h2{font-size:30px;font-weight:800;letter-spacing:-.02em}
+  .hero .badge{display:inline-block;font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-soft);
+    padding:3px 9px;border-radius:20px;margin-left:8px;vertical-align:middle}
+  .hero p{color:var(--ink-2);margin-top:10px;max-width:760px;font-size:15px}
+  .stats{display:flex;gap:14px;margin-top:22px;flex-wrap:wrap}
+  .stat{background:var(--bg);border-radius:12px;padding:14px 18px;flex:1;min-width:140px}
+  .stat b{display:block;font-size:24px;font-weight:800;color:var(--blue)}
+  .stat span{font-size:12.5px;color:var(--ink-2)}
+
+  /* ---------- mac window mockup ---------- */
+  .win{border-radius:14px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line);background:#fff}
+  .win .titlebar{height:38px;background:#f0f0f3;display:flex;align-items:center;padding:0 14px;gap:8px;border-bottom:1px solid var(--line)}
+  .tl{width:12px;height:12px;border-radius:50%}
+  .tl.r{background:#ff5f57}.tl.y{background:#febc2e}.tl.g{background:#28c840}
+  .win .titlebar .t{font-size:12.5px;color:var(--ink-2);margin-left:6px}
+
+  /* ---------- section ---------- */
+  section{margin-bottom:34px;scroll-margin-top:70px}
+  .sec-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .sec-head .ico{width:34px;height:34px;border-radius:9px;background:var(--blue-soft);color:var(--blue);
+    display:grid;place-items:center;font-size:18px}
+  .sec-head h3{font-size:21px;font-weight:750}
+  .sec-head .cnt{font-size:12px;color:var(--ink-2);background:var(--bg);padding:3px 9px;border-radius:20px}
+
+  /* ---------- mockup canvas ---------- */
+  .stage{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+  .layout{display:flex;gap:14px;min-height:300px}
+  .mock-side{width:190px;flex:none;background:#fbfbfd;border:1px solid var(--line);border-radius:11px;padding:14px;font-size:13px}
+  .mock-side .navitem{padding:7px 10px;border-radius:8px;display:flex;align-items:center;gap:8px;color:var(--ink-2);margin-bottom:3px}
+  .mock-side .navitem.on{background:var(--blue-soft);color:var(--blue);font-weight:600}
+  .mock-main{flex:1;background:#fff;border:1px solid var(--line);border-radius:11px;padding:16px;display:flex;flex-direction:column;min-width:0}
+  .mock-quick{width:200px;flex:none;background:#fbfbfd;border:1px solid var(--line);border-radius:11px;padding:14px;font-size:13px}
+  .mock-bottom{margin-top:12px;display:flex;gap:8px;background:rgba(245,245,247,.7);border:1px solid var(--line);
+    border-radius:12px;padding:8px}
+
+  /* ---------- button visuals ---------- */
+  .toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+  .btn{font-size:13px;font-weight:500;border:1px solid var(--line);background:#fff;color:var(--ink);
+    padding:7px 13px;border-radius:8px;cursor:default;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .btn .g{font-size:13px;opacity:.8}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn.danger{background:#fff;color:var(--red);border-color:rgba(242,69,51,.35)}
+  .btn.link{background:none;border:none;color:var(--blue);padding:0;text-decoration:underline}
+  .btn.plain{background:none;border:none;padding:4px 6px;border-radius:6px;color:var(--ink-2)}
+  .btn.menu{border:none;background:none;padding:6px 10px;border-radius:8px;display:flex;align-items:center;gap:8px}
+  .btn.menu:hover{background:var(--bg)}
+  .btn.tiny{padding:4px 9px;font-size:12px}
+  .btn:hover{outline:2px solid var(--blue);outline-offset:1px}
+  .chip{font-size:11.5px;color:var(--ink-2);background:var(--bg);padding:3px 9px;border-radius:20px}
+  .dotmenu{width:26px;height:24px;border:1px solid var(--line);border-radius:7px;display:grid;place-items:center;color:var(--ink-2)}
+  .divider{width:1px;height:20px;background:var(--line);margin:0 2px}
+
+  /* ---------- legend table ---------- */
+  .legend{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .legend table{width:100%;border-collapse:collapse;font-size:13.5px}
+  .legend th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2);
+    padding:11px 16px;background:#fafafa;border-bottom:1px solid var(--line)}
+  .legend td{padding:11px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+  .legend tr:last-child td{border-bottom:none}
+  .legend .bname{font-weight:600;white-space:nowrap}
+  .legend .act{color:var(--ink-2)}
+  .legend .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
+  .tag.blue{background:var(--blue-soft);color:var(--blue)}
+  .tag.red{background:var(--red-soft);color:var(--red)}
+  .tag.gray{background:var(--bg);color:var(--ink-2)}
+  .tag.plain{background:#eee;color:var(--ink-2)}
+
+  .note{font-size:12.5px;color:var(--ink-2);margin-top:10px;background:var(--blue-soft);
+    border:1px solid rgba(15,102,242,.18);border-radius:10px;padding:10px 14px}
+  .note.warn{background:var(--red-soft);border-color:rgba(242,69,51,.2)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:860px){.toc{display:none}.grid2{grid-template-columns:1fr}}
+  h4.sub{font-size:14px;font-weight:700;margin:6px 0 10px;color:var(--ink)}
+  .kbd{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:#fff;border:1px solid var(--line);
+    border-bottom-width:2px;border-radius:6px;padding:1px 6px;color:var(--ink)}
+
+  /* ---------- settings page (macOS style) ---------- */
+  .settings-page{display:block;width:100%}
+  .settings-group{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;width:100%;margin-bottom:16px}
+  .settings-group .grp-head{padding:14px 18px 0;font-size:13px;font-weight:700;color:var(--ink)}
+  .settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:16px;
+    border-bottom:1px solid var(--line);min-height:52px}
+  .settings-row:last-child{border-bottom:none}
+  .settings-row.wrap{align-items:flex-start;flex-wrap:wrap}
+  .settings-label{flex:1;min-width:0;display:flex;align-items:center;gap:10px}
+  .settings-label .row-icon{width:28px;height:28px;border-radius:7px;background:var(--blue-soft);color:var(--blue);
+    display:grid;place-items:center;font-size:14px;flex-shrink:0}
+  .settings-label-text{min-width:0}
+  .settings-label-text b{display:block;font-size:13.5px;font-weight:600;color:var(--ink)}
+  .settings-label-text small{display:block;font-size:11.5px;color:var(--ink-2);margin-top:1px;line-height:1.35}
+  .settings-action{flex-shrink:0;display:flex;align-items:center;gap:8px}
+  /* segmented control */
+  .seg{display:inline-flex;background:var(--bg);border-radius:8px;padding:2px;gap:2px}
+  .seg opt{font-size:12.5px;font-weight:500;padding:5px 14px;border-radius:7px;border:none;background:transparent;
+    color:var(--ink-2);cursor:pointer;white-space:nowrap;transition:all .15s}
+  .seg opt.active{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);font-weight:600}
+  .seg opt:hover:not(.active){color:var(--ink)}
+  /* toggle switch */
+  .toggle{width:40px;height:24px;border-radius:12px;background:#e0e0e4;position:relative;cursor:pointer;
+    transition:background .2s;flex-shrink:0}
+  .toggle.on{background:var(--blue)}
+  .toggle::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;
+    top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+  .toggle.on::after{transform:translateX(16px)}
+  /* permission badge */
+  .perm-badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;
+    color:var(--green);background:rgba(40,184,106,.10);padding:3px 9px;border-radius:6px}
+  /* dropdown trigger */
+  .dd-trigger{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--blue);
+    background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;white-space:nowrap}
+  .dd-trigger:hover{background:var(--blue-soft)}
+  .dd-trigger .arr{font-size:9px;color:var(--ink-2)}
+  /* select-style */
+  .sel-wrap{position:relative}
+  .sel-styled{appearance:none;-webkit-appearance:none;font-size:12.5px;padding:6px 28px 6px 12px;
+    border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);
+    cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6b70' fill='none' stroke-width='1.2'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right:10px center}
+  /* shortcut display */
+  .shortcut-card{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--bg);
+    border-radius:10px;margin-top:4px}
+  .shortcut-circle{width:48px;height:48px;border-radius:50%;background:var(--card);border:2px solid var(--line);
+    display:grid;place-items:center;flex-shrink:0}
+  .shortcut-circle b{font-size:11px;color:var(--blue);text-align:center;line-height:1.1}
+  .shortcut-info{flex:1;min-width:0}
+  .shortcut-info b{display:block;font-size:12px;font-weight:600}
+  .shortcut-info small{font-size:11px;color:var(--ink-2)}
+  .activity-card{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);
+    border:1px solid var(--line);border-radius:11px;flex-shrink:0;box-sizing:border-box}
+  .activity-card .avatar{width:32px;height:32px;border-radius:8px;background:var(--blue-soft);
+    display:grid;place-items:center;font-size:15px;flex-shrink:0}
+  .activity-card .meta b{display:block;font-size:11.5px;font-weight:600}
+  .activity-card .meta small{font-size:10px;color:var(--ink-2)}
+
+  @media(max-width:720px){
+    .settings-row{flex-direction:column;align-items:flex-start;gap:8px}
+    .settings-action{width:100%;justify-content:flex-end}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand-logo">F</div>
+  <div>
+    <h1>Foldesk</h1>
+    <div class="sub">macOS 窗口收纳与工作区管理 · 产品可视化说明</div>
+  </div>
+  <div class="grow"></div>
+  <a href="#main">主窗口</a>
+  <a href="#pages">各页面</a>
+  <a href="#extras">菜单/弹窗</a>
+</div>
+
+<div class="wrap">
+  <!-- TOC -->
+  <nav class="toc">
+    <div class="grp">总览</div>
+    <a href="#main">主窗口布局</a>
+    <a href="#menubar">菜单栏面板</a>
+    <div class="grp">页面</div>
+    <a href="#p1">全部应用</a>
+    <a href="#p2">最近收起</a>
+    <a href="#p3">工作区</a>
+    <a href="#p4">批量操作</a>
+    <a href="#p5">设置</a>
+    <div class="grp">弹窗 / 浮层</div>
+    <a href="#s1">新建工作区</a>
+    <a href="#s2">安全结束工作</a>
+    <a href="#s3">恢复浮层</a>
+    <a href="#shortcut">快捷键</a>
+  </nav>
+
+  <div class="content">
+    <!-- HERO -->
+    <div class="hero">
+      <h2>Foldesk<span class="badge">Mac App · 1.0</span></h2>
+      <p>一个原生 SwiftUI 写的 macOS 窗口管理工具：扫描当前运行的应用与窗口，一键收起 / 恢复整个桌面，保存「工作区」场景，并安全地结束工作。所有数据仅存于本机（UserDefaults），<b>不读取真实窗口画面</b>，因此只需「辅助功能」授权，不需要屏幕录制权限。</p>
+      <div class="stats">
+        <div class="stat"><b>5</b><span>主功能页面</span></div>
+        <div class="stat"><b>2</b><span>弹窗 + 1 恢复浮层</span></div>
+        <div class="stat"><b>100%</b><span>本地存储，无上传</span></div>
+        <div class="stat"><b>10</b><span>最近收起历史上限</span></div>
+      </div>
+    </div>
+
+    <!-- MAIN WINDOW -->
+    <section id="main">
+      <div class="sec-head"><div class="ico">▦</div><h3>主窗口布局</h3><span class="cnt">三栏 + 底栏</span></div>
+      <div class="win">
+        <div class="titlebar"><span class="tl r"></span><span class="tl y"></span><span class="tl g"></span><span class="t">Foldesk — 窗口总控台</span></div>
+        <div class="stage" style="box-shadow:none;padding:16px">
+          <div class="layout">
+            <div class="mock-side">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <div class="brand-logo" style="width:26px;height:26px;font-size:13px">F</div>
+                <div><div style="font-weight:700;font-size:13px">Foldesk</div><div style="font-size:11px;color:var(--ink-2)">窗口工作台</div></div>
+              </div>
+              <div class="navitem on">▦ 全部应用</div>
+              <div class="navitem">🕑 最近收起</div>
+              <div class="navitem">▥ 工作区</div>
+              <div class="navitem">▤ 批量操作</div>
+              <div class="navitem">⚙ 设置</div>
+              <div style="margin:12px 0 6px;font-size:11px;color:var(--ink-2)">快捷操作</div>
+              <div class="navitem">↓ 收起全部</div>
+              <div class="navitem">↺ 恢复刚才</div>
+              <div class="navitem">▭ 打开桌面</div>
+              <div style="margin-top:14px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:10px;font-size:11px;color:var(--ink-2)">Foldesk 1.0<br>让窗口管理回归掌控</div>
+            </div>
+            <div class="mock-main">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div><div style="font-weight:700;font-size:18px">窗口总控台</div><div style="font-size:12px;color:var(--ink-2)">查看、收起、恢复和结束你的窗口工作区</div></div>
+                <div style="display:flex;gap:6px"><span class="chip">🔍 搜索…</span><span class="btn tiny">⟳</span></div>
+              </div>
+              <div style="background:#fafafa;border:1px solid var(--line);border-radius:9px;padding:10px;font-size:12px;color:var(--ink-2);margin-bottom:10px">12 个应用 · 28 个窗口 · 当前已选 3 项 ｜ 更新于 10:54</div>
+              <div style="border:1px solid var(--line);border-radius:11px;padding:10px;font-size:12.5px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><b>▦ Safari</b><span class="chip">5 个窗口</span><span class="divider"></span><span class="btn tiny">👁 显示全部</span><span class="dotmenu">⋯</span></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--line)">
+                  <span class="btn tiny">🪟 窗口缩略图 ×5</span><span class="btn tiny danger">👁‍🗨 隐藏</span><span class="btn tiny">— 缩小全部</span><span class="btn tiny danger">✕ 关闭窗口</span>
+                </div>
+              </div>
+              <div style="flex:1"></div>
+            </div>
+            <div class="mock-quick">
+              <div style="font-weight:700;color:var(--blue);font-size:13px;margin-bottom:8px">⌂ 一键回到桌面</div>
+              <div class="btn primary" style="width:100%;justify-content:center;margin-bottom:7px">↓ 收起全部</div>
+              <div class="btn" style="width:100%;justify-content:center;margin-bottom:7px">↺ 恢复刚才</div>
+              <div style="font-size:11px;color:var(--ink-2);margin-bottom:14px">记录当前窗口状态，临时隐藏所有应用，再次点击即可恢复。</div>
+              <div style="font-weight:700;color:var(--red);font-size:13px;margin-bottom:8px">⏻ 结束工作</div>
+              <div style="font-size:11px;color:var(--ink-2);margin-bottom:8px">安全退出选中的应用，遇到未保存内容时交还原应用确认。</div>
+              <div class="btn" style="width:100%;justify-content:center">选择要退出的应用</div>
+            </div>
+          </div>
+          <div class="mock-bottom">
+            <span class="btn primary" style="flex:1;justify-content:center">↓ 收起全部</span>
+            <span class="btn" style="flex:1;justify-content:center">↺ 恢复刚才</span>
+            <span class="btn" style="flex:1;justify-content:center">⏻ 结束工作</span>
+            <span class="btn" style="flex:1;justify-content:center">＋ 新建工作区</span>
+          </div>
+        </div>
+      </div>
+      <div class="note">布局说明：左侧边栏负责<b>页面切换 + 快捷操作</b>；右侧内容区随所选页面变化；底部操作条在<b>所有页面都常驻显示</b>，提供四个最高频动作。</div>
+    </section>
+
+    <!-- MENU BAR -->
+    <section id="menubar">
+      <div class="sec-head"><div class="ico">◧</div><h3>菜单栏面板</h3><span class="cnt">状态栏图标</span></div>
+      <div class="stage" style="max-width:340px">
+        <div style="border:1px solid var(--line);border-radius:12px;padding:16px;width:300px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div class="brand-logo" style="width:34px;height:34px;font-size:15px">F</div>
+            <div><div style="font-weight:700">Foldesk</div><div style="font-size:11px;color:var(--ink-2)">12 个应用 · 28 个窗口</div></div>
+            <span class="grow" style="flex:1"></span>
+            <span class="btn tiny">⟳</span>
+          </div>
+          <div style="border-top:1px solid var(--line);padding-top:12px">
+            <div class="btn primary" style="width:100%;justify-content:center;margin-bottom:8px">↓ 收起全部</div>
+            <div class="btn" style="width:100%;justify-content:center;margin-bottom:8px">↺ 恢复刚才</div>
+            <div class="btn" style="width:100%;justify-content:center;margin-bottom:12px">▢ 打开 Foldesk</div>
+            <div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px">
+              <span class="btn link" style="font-size:12px">设置…</span>
+              <span class="btn link" style="font-size:12px;color:var(--ink-2)">退出</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <table>
+          <tr><th style="width:180px">元素</th><th>作用</th></tr>
+          <tr><td class="bname">⟳ 刷新</td><td class="act">重新扫描当前运行的应用与窗口列表。</td></tr>
+          <tr><td class="bname">↓ 收起全部</td><td class="act">记录窗口状态并临时隐藏全部应用。</td></tr>
+          <tr><td class="bname">↺ 恢复刚才</td><td class="act">把最近一次收起的状态恢复回来。</td></tr>
+          <tr><td class="bname">▢ 打开 Foldesk</td><td class="act">将主窗口提到最前（即使主窗口被关掉也能调出）。</td></tr>
+          <tr><td class="bname">设置…</td><td class="act">打开偏好设置窗口。</td></tr>
+          <tr><td class="bname">退出</td><td class="act">终止整个 Foldesk 应用。</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- PAGES -->
+    <div id="pages"></div>
+
+    <!-- PAGE 1 -->
+    <section id="p1">
+      <div class="sec-head"><div class="ico">▦</div><h3>页面 · 全部应用（窗口总控台）</h3><span class="cnt">主页面</span></div>
+      <div class="stage">
+        <div class="toolbar" style="margin-bottom:12px">
+          <span class="chip">🔍 搜索应用 / 窗口 / 文件名</span>
+          <span class="btn tiny">✕ 清除搜索</span>
+          <span class="btn tiny">⟳ 刷新</span>
+          <span class="btn tiny danger">🔒 重新检测</span>
+          <span class="btn primary tiny">打开系统设置</span>
+        </div>
+        <h4 class="sub">每个应用卡片（ApplicationCard）</h4>
+        <div class="toolbar" style="margin-bottom:6px">
+          <span class="btn tiny">▾ 展开/收起</span>
+          <span class="btn tiny">👁 显示全部</span>
+          <span class="dotmenu">⋯ 更多菜单</span>
+        </div>
+        <div class="toolbar" style="color:var(--ink-2);font-size:12.5px;margin:4px 0 10px">⋯ 菜单内含：隐藏应用 ｜ 缩小全部 ｜ 关闭全部窗口 ｜ 退出应用</div>
+        <div class="toolbar" style="margin-bottom:6px">
+          <span class="btn tiny">🪟 窗口缩略图（单击选中 / 双击切换 / 右键菜单）</span>
+        </div>
+        <div class="toolbar">
+          <span class="btn tiny danger">👁‍🗨 隐藏</span>
+          <span class="btn tiny">— 缩小全部</span>
+          <span class="btn tiny danger">✕ 关闭窗口</span>
+          <span class="btn link" style="font-size:12px">激活应用（无窗口时）</span>
+        </div>
+      </div>
+      <div class="legend">
+        <table>
+          <tr><th style="width:210px">按钮</th><th>具体作用</th><th style="width:90px">类型</th></tr>
+          <tr><td class="bname">🔍 搜索框</td><td class="act">按应用名 / 窗口标题 / 文件名实时过滤列表。</td><td><span class="tag gray">输入</span></td></tr>
+          <tr><td class="bname">✕ 清除搜索</td><td class="act">清空搜索词，恢复完整列表。</td><td><span class="tag plain">文本</span></td></tr>
+          <tr><td class="bname">⟳ 刷新</td><td class="act">重新扫描所有运行中的应用与窗口。</td><td><span class="tag plain">图标</span></td></tr>
+          <tr><td class="bname">🔒 重新检测</td><td class="act">未授权时显示；重新检查辅助功能权限，若已授权顺带刷新。</td><td><span class="tag gray">仅无权限时</span></td></tr>
+          <tr><td class="bname">打开系统设置</td><td class="act">弹出 macOS 系统设置去开启「辅助功能」。</td><td><span class="tag blue">主按钮</span></td></tr>
+          <tr><td class="bname">▾ 展开/收起</td><td class="act">展开或折叠该应用的窗口缩略图列表。</td><td><span class="tag plain">图标</span></td></tr>
+          <tr><td class="bname">👁 显示全部</td><td class="act">取消隐藏该应用，并还原它所有被缩小的窗口。</td><td><span class="tag plain">普通</span></td></tr>
+          <tr><td class="bname">⋯ 更多菜单</td><td class="act">展开：隐藏应用 / 缩小全部 / 关闭全部窗口 / 退出应用。</td><td><span class="tag plain">菜单</span></td></tr>
+          <tr><td class="bname">🪟 窗口缩略图</td><td class="act">单击=选中/取消（用于批量）；双击=直接切到该窗口；右键菜单=切换/缩小/关闭。</td><td><span class="tag gray">交互</span></td></tr>
+          <tr><td class="bname">👁‍🗨 隐藏</td><td class="act">隐藏整个应用（窗口仍在，只是从桌面移走）。</td><td><span class="tag red">危险</span></td></tr>
+          <tr><td class="bname">— 缩小全部</td><td class="act">把该应用的所有窗口最小化到 Dock。</td><td><span class="tag plain">普通</span></td></tr>
+          <tr><td class="bname">✕ 关闭窗口</td><td class="act">关闭该应用的所有窗口（走正常关闭流程）。</td><td><span class="tag red">危险</span></td></tr>
+          <tr><td class="bname">激活应用</td><td class="act">后台无窗口时，点击唤起该应用。</td><td><span class="tag blue">链接</span></td></tr>
+          <tr><td class="bname">退出应用 → 正常退出</td><td class="act">弹确认框后发「正常退出」请求，由原 App 自行处理未保存提示，不强制杀进程。</td><td><span class="tag red">危险</span></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- PAGE 2 -->
+    <section id="p2">
+      <div class="sec-head"><div class="ico">🕑</div><h3>页面 · 最近收起</h3><span class="cnt">历史快照</span></div>
+      <div class="stage">
+        <div class="toolbar">
+          <span class="btn tiny">💾 保存为工作区</span>
+          <span class="btn primary tiny">↺ 恢复</span>
+          <span class="chip">左滑可删除某条记录</span>
+        </div>
+      </div>
+      <div class="legend">
+        <table>
+          <tr><th style="width:210px">按钮</th><th>具体作用</th><th style="width:90px">类型</th></tr>
+          <tr><td class="bname">💾 保存为工作区</td><td class="act">把这次桌面快照直接转成一个可复用的工作区。</td><td><span class="tag plain">普通</span></td></tr>
+          <tr><td class="bname">↺ 恢复</td><td class="act">恢复这条记录的窗口状态；恢复后标记「已恢复」。</td><td><span class="tag blue">主按钮</span></td></tr>
+          <tr><td class="bname">左滑删除</td><td class="act">删除该条收起历史（最多保留最近 10 条）。</td><td><span class="tag gray">手势</span></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- PAGE 3 -->
+    <section id="p3">
+      <div class="sec-head"><div class="ico">▥</div><h3>页面 · 工作区</h3><span class="cnt">场景库</span></div>
+      <div class="stage">
+        <div class="toolbar">
+          <span class="dotmenu">⋯ 卡片菜单（复制 / 删除）</span>
+          <span class="btn primary tiny">▶ 打开工作区</span>
+          <span class="chip">每张卡片一个工作区</span>
+        </div>
+      </div>
+      <div class="legend">
+        <table>
+          <tr><th style="width:210px">按钮</th><th>具体作用</th><th style="width:90px">类型</th></tr>
+          <tr><td class="bname">⋯ 卡片菜单</td><td class="act">「复制」：存一份「原名 副本」；「删除」：移除该工作区。</td><td><span class="tag plain">菜单</span></td></tr>
+          <tr><td class="bname">▶ 打开工作区</td><td class="act">按保存的位置与尺寸，恢复这组窗口（一键切换工作场景）。</td><td><span class="tag blue">主按钮</span></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- PAGE 4 -->
+    <section id="p4">
+      <div class="sec-head"><div class="ico">▤</div><h3>页面 · 批量操作</h3><span class="cnt">多选统一处理</span></div>
+      <div class="stage">
+        <div class="toolbar">
+          <span class="btn tiny">☑ 全选</span>
+          <span class="btn tiny">⌗ 清除选择</span>
+          <span class="btn tiny">👁 显示</span>
+          <span class="btn tiny">— 缩小</span>
+          <span class="btn tiny danger">✕ 关闭</span>
+          <span class="chip">每个窗口前有复选框</span>
+        </div>
+      </div>
+      <div class="legend">
+        <table>
+          <tr><th style="width:210px">按钮</th><th>具体作用</th><th style="width:90px">类型</th></tr>
+          <tr><td class="bname">☑ 全选</td><td class="act">选中当前所有窗口。</td><td><span class="tag plain">普通</span></td></tr>
+          <tr><td class="bname">⌗ 清除选择</td><td class="act">取消所有已选窗口。</td><td><span class="tag plain">普通</span></td></tr>
+          <tr><td class="bname">👁 显示</td><td class="act">把选中窗口全部切到前台（无选中时禁用）。</td><td><span class="tag plain">普通</span></td></tr>
+          <tr><td class="bname">— 缩小</td><td class="act">选中窗口全部最小化（无选中时禁用）。</td><td><span class="tag plain">普通</span></td></tr>
+          <tr><td class="bname">✕ 关闭</td><td class="act">弹「关闭选中的窗口？」确认后，逐窗走正常关闭流程。</td><td><span class="tag red">危险</span></td></tr>
+          <tr><td class="bname">☐ 窗口复选框</td><td class="act">勾选/取消单个窗口的批量选中状态。</td><td><span class="tag gray">开关</span></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- PAGE 5 - Settings (macOS style) -->
+    <section id="p5">
+      <div class="sec-head"><div class="ico">⚙</div><h3>页面 · 设置</h3><span class="cnt">偏好与安全</span></div>
+      <div class="stage" style="padding:0;overflow:hidden">
+      <div class="settings-page">
+
+        <!-- 外观 -->
+        <div class="settings-group">
+          <div class="grp-head">外观</div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="settings-label-text">
+                <b>显示模式</b>
+              </div>
+            </div>
+            <div class="settings-action">
+              <div class="seg">
+                <opt class="active">跟随系统</opt>
+                <opt>白天</opt>
+                <opt>黑夜</opt>
+              </div>
+            </div>
+          </div>
+          <div class="settings-row" style="padding:0 18px 12px">
+            <small style="color:var(--ink-2);font-size:11.5px">"跟随系统"会随 macOS 的外观设置自动切换。</small>
+          </div>
+        </div>
+
+        <!-- 权限 -->
+        <div class="settings-group">
+          <div class="grp-head">权限</div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="row-icon">①</div>
+              <div class="settings-label-text">
+                <b>辅助功能</b>
+                <small>用于观察、缩小/关闭其他应用窗口</small>
+              </div>
+            </div>
+            <div class="settings-action">
+              <span class="perm-badge">✓ 已授权</span>
+              <button class="dd-trigger">取消授权 <span class="arr">▸</span></button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="row-icon">②</div>
+              <div class="settings-label-text">
+                <b>屏幕录制</b>
+                <small>仅用于在本机生成真实窗口缩略图</small>
+              </div>
+            </div>
+            <div class="settings-action">
+              <span class="perm-badge">✓ 已授权</span>
+              <button class="dd-trigger">取消授权 <span class="arr">▸</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 收起与恢复 -->
+        <div class="settings-group">
+          <div class="grp-head">收起与恢复</div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="settings-label-text"><b>默认收起方式</b></div>
+            </div>
+            <div class="settings-action">
+              <div class="sel-wrap">
+                <select class="sel-styled">
+                  <option>隐藏应用</option>
+                  <option>缩小窗口</option>
+                  <option>混合模式</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="settings-row wrap">
+            <div class="settings-label" style="flex:1">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="toggle on"></div>
+                <span style="font-size:13px;font-weight:500">收起后显示恢复浮层</span>
+              </div>
+            </div>
+            <div class="settings-action">
+              <span class="chip">隐藏应用</span>
+              <span style="font-size:18px;color:var(--ink-2)">⟳</span>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="toggle"></div>
+                <span style="font-size:13px;font-weight:500">记住窗口位置</span>
+              </div>
+            </div>
+            <div class="settings-action">
+              <div class="toggle on" style="margin-left:auto"></div>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="toggle on"></div>
+                <span style="font-size:13px;font-weight:500">记住窗口尺寸</span>
+              </div>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="toggle on"></div>
+                <span style="font-size:13px;font-weight:500">保存最近 10 次收起记录</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 安全 -->
+        <div class="settings-group">
+          <div class="grp-head">安全</div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="toggle on"></div>
+                <span style="font-size:13px;font-weight:600">高风险操作前确认</span>
+              </div>
+            </div>
+          </div>
+          <div class="settings-row" style="padding:0 18px 10px">
+            <small style="color:var(--ink-2);font-size:11.5px">Foldesk 始终优先使用应用的正常退出流程，不认强制制退出。</small>
+          </div>
+        </div>
+
+        <!-- 快捷唤起 -->
+        <div class="settings-group">
+          <div class="grp-head">快捷唤起</div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="settings-label-text">
+                <b>全局唤起快捷键</b>
+                <small style="margin-top:4px;display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap">
+                  <span class="kbd">⌘</span><span class="kbd">⇧</span><span class="kbd">F</span>
+                  · "学习" 应用 <b>3/3</b> · 窗口 <b>2/2</b>
+                </small>
+              </div>
+            </div>
+            <div class="settings-action">
+              <button class="btn tiny">点击设置</button>
+            </div>
+          </div>
+          <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px;padding:14px 18px;border-bottom:none">
+            <div class="shortcut-card" style="width:100%;box-sizing:border-box">
+              <div class="shortcut-circle"><b>▶<br>25 分</b></div>
+              <div class="shortcut-info">
+                <b>低配来活动</b>
+                <small>喝水 — 30次 · 运动 20 秒 — 534</small>
+              </div>
+            </div>
+            <div class="activity-card" style="width:100%;box-sizing:border-box">
+              <div class="avatar">👤</div>
+              <div class="meta">
+                <b>低配来活动</b>
+                <small>喝水 — 30次 · 运动 20秒 — 534</small>
+              </div>
+            </div>
+          </div>
+          <div class="settings-row" style="padding:8px 18px 14px">
+            <small style="color:var(--ink-2);font-size:11.5px">设置后，即使 Foldesk 在后台也能用全局快捷键唤出主窗口。· 需要在「系统设置 → 隐私与安全 → 辅助功能」中授权。</small>
+          </div>
+        </div>
+
+      </div>
+      </div>
+      <div class="legend">
+        <table>
+          <tr><th style="width:210px">控件</th><th>具体作用</th><th style="width:90px">类型</th></tr>
+          <tr><td class="bname">显示模式</td><td class="act">跟随系统 / 白天 / 黑夜 三选一，控制整体 UI 色彩风格。</td><td><span class="tag gray">分段控件</span></td></tr>
+          <tr><td class="bname">辅助功能 / 屏幕录制</td><td class="act">macOS 权限授权状态；已授权显示绿色 badge，可取消授权。</td><td><span class="tag blue">权限行</span></td></tr>
+          <tr><td class="bname">默认收起方式</td><td class="act">选择「收起全部」的默认行为：隐藏应用 / 缩小窗口 / 混合（多窗隐藏、单窗缩小）。</td><td><span class="tag gray">下拉</span></td></tr>
+          <tr><td class="bname">开关 (Toggle)</td><td class="act">各项功能的启用/禁用开关，蓝色为开启状态。</td><td><span class="tag gray">开关</span></td></tr>
+          <tr><td class="bname">高风险操作前确认</td><td class="act">对退出 / 关闭等危险操作弹出确认框（始终优先正常关闭流程）。</td><td><span class="tag gray">开关</span></td></tr>
+          <tr><td class="bname">全局唤起快捷键</td><td class="act">设置全局热键，Foldesk 在后台时也可唤出主窗口。</td><td><span class="tag blue">快捷键</span></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- EXTRAS -->
+    <div id="extras"></div>
+
+    <!-- SHEET 1 -->
+    <section id="s1">
+      <div class="sec-head"><div class="ico">＋</div><h3>弹窗 · 新建工作区</h3><span class="cnt">Sheet</span></div>
+      <div class="win" style="max-width:480px">
+        <div class="stage" style="box-shadow:none;padding:22px">
+          <div style="font-weight:700;font-size:18px;margin-bottom:6px">新建工作区</div>
+          <div style="font-size:13px;color:var(--ink-2);margin-bottom:14px">保存当前 12 个应用、28 个窗口及其位置和尺寸。</div>
+          <div style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--ink-2);margin-bottom:14px">工作区名称，例如：论文模式</div>
+          <div style="display:flex;gap:8px;margin-bottom:18px">
+            <span class="btn tiny" style="background:var(--blue);color:#fff">💼</span>
+            <span class="btn tiny">🎓</span><span class="btn tiny">👥</span><span class="btn tiny">☕</span><span class="btn tiny">🖌</span>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px">
+            <span class="btn tiny">取消</span>
+            <span class="btn primary tiny">保存工作区</span>
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <table>
+          <tr><th style="width:210px">控件</th><th>具体作用</th><th style="width:90px">类型</th></tr>
+          <tr><td class="bname">名称输入框</td><td class="act">填写工作区名字；为空时「保存工作区」按钮禁用。</td><td><span class="tag gray">输入</span></td></tr>
+          <tr><td class="bname">5 个图标按钮</td><td class="act">选择工作区图标（公文包 / 毕业帽 / 双人 / 咖啡杯 / 画笔），选中项高亮蓝色。</td><td><span class="tag plain">单选</span></td></tr>
+          <tr><td class="bname">取消</td><td class="act">关闭弹窗，不保存。</td><td><span class="tag plain">普通</span></td></tr>
+          <tr><td class="bname">保存工作区</td><td class="act">把当前桌面存为工作区并关闭弹窗。</td><td><span class="tag blue">主按钮</span></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- SHEET 2 -->
+    <section id="s2">
+      <div class="sec-head"><div class="ico">⏻</div><h3>弹窗 · 安全结束工作</h3><span class="cnt">Sheet</span></div>
+      <div class="win" style="max-width:560px">
+        <div class="stage" style="box-shadow:none;padding:22px">
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
+            <div style="width:34px;height:34px;border-radius:9px;background:var(--red-soft);color:var(--red);display:grid;place-items:center;font-size:18px">⏻</div>
+            <div><div style="font-weight:700;font-size:17px">安全结束工作</div><div style="font-size:12px;color:var(--ink-2)">选择要正常退出的应用</div></div>
+          </div>
+          <div style="border:1px solid var(--line);border-radius:9px;padding:8px;font-size:13px;color:var(--ink-2);height:120px;overflow:hidden;margin-bottom:14px">☐ Safari ｜ 5 个窗口<br>☐ Xcode ｜ 2 个窗口 ⚠<br>☐ 备忘录 ｜ 1 个窗口<br>☐ 终端 ｜ 3 个窗口</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="btn tiny">☑ 全选</span>
+            <div style="display:flex;gap:10px"><span class="btn tiny">取消</span><span class="btn tiny danger">退出 2 个应用</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <table>
+          <tr><th style="width:210px">控件</th><th>具体作用</th><th style="width:90px">类型</th></tr>
+          <tr><td class="bname">应用复选框</td><td class="act">勾选要退出的应用（含未保存风险提示 ⚠）。</td><td><span class="tag gray">开关</span></td></tr>
+          <tr><td class="bname">☑ 全选</td><td class="act">勾选列表里所有应用。</td><td><span class="tag plain">普通</span></td></tr>
+          <tr><td class="bname">取消</td><td class="act">关闭弹窗，不退出任何应用。</td><td><span class="tag plain">普通</span></td></tr>
+          <tr><td class="bname">退出 N 个应用</td><td class="act">弹「确认结束工作？」后逐个发正常退出请求；未保存内容由原 App 询问。无选中时禁用。</td><td><span class="tag red">危险</span></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- RECOVERY OVERLAY -->
+    <section id="s3">
+      <div class="sec-head"><div class="ico">◳</div><h3>恢复浮层</h3><span class="cnt">Overlay</span></div>
+      <div class="stage" style="position:relative;min-height:160px">
+        <div style="position:absolute;right:24px;bottom:24px;border:1px solid var(--line);border-radius:13px;padding:14px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.12);display:flex;align-items:center;gap:12px;max-width:340px">
+          <div style="color:var(--blue);font-size:20px">▥</div>
+          <div style="flex:1"><div style="font-weight:700;font-size:14px">桌面已收起</div><div style="font-size:12px;color:var(--ink-2)">随时可以恢复刚才的工作状态</div></div>
+          <span class="btn primary tiny">↺ 恢复刚才</span>
+          <span class="btn plain tiny">✕</span>
+        </div>
+      </div>
+      <div class="legend">
+        <table>
+          <tr><th style="width:210px">按钮</th><th>具体作用</th><th style="width:90px">类型</th></tr>
+          <tr><td class="bname">↺ 恢复刚才</td><td class="act">恢复最近一次收起的桌面状态，并关闭浮层。</td><td><span class="tag blue">主按钮</span></td></tr>
+          <tr><td class="bname">✕ 关闭</td><td class="act">关闭浮层（不恢复，之后仍可随时恢复）。</td><td><span class="tag plain">图标</span></td></tr>
+        </table>
+      </div>
+      <div class="note">浮层仅在「设置 → 收起后显示恢复浮层」开启、且刚执行过「收起全部」时出现，默认右下角悬浮。</div>
+    </section>
+
+    <!-- SHORTCUTS -->
+    <section id="shortcut">
+      <div class="sec-head"><div class="ico">⌘</div><h3>快捷键 & 顶部菜单</h3><span class="cnt">App Menu</span></div>
+      <div class="legend">
+        <table>
+          <tr><th style="width:240px">命令</th><th>快捷键</th><th>作用</th></tr>
+          <tr><td class="bname">收起全部</td><td><span class="kbd">⌥ D</span></td><td class="act">收起全部应用窗口。</td></tr>
+          <tr><td class="bname">恢复刚才</td><td><span class="kbd">⌥ R</span></td><td class="act">恢复最近一次收起。</td></tr>
+          <tr><td class="bname">刷新窗口</td><td><span class="kbd">⌘ R</span></td><td class="act">重新扫描窗口列表。</td></tr>
+        </table>
+      </div>
+      <div class="note">以上三项也出现在顶栏的 <b>Foldesk 菜单</b> 中，可在不打开主窗口时使用。</div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  // TOC active highlight on scroll
+  const links=[...document.querySelectorAll('.toc a')];
+  const map={};links.forEach(a=>map[a.getAttribute('href').slice(1)]=a);
+  const obs=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        links.forEach(l=>l.classList.remove('active'));
+        if(map[e.target.id])map[e.target.id].classList.add('active');
+      }
+    });
+  },{rootMargin:'-70px 0px -70% 0px'});
+  document.querySelectorAll('section[id]').forEach(s=>obs.observe(s));
+
+  // settings toggles
+  document.querySelectorAll('.toggle').forEach(t=>t.addEventListener('click',function(){this.classList.toggle('on')}));
+
+  // settings segmented control
+  document.querySelectorAll('.seg').forEach(seg=>{
+    seg.querySelectorAll('opt').forEach(opt=>opt.addEventListener('click',function(){
+      seg.querySelectorAll('opt').forEach(o=>o.classList.remove('active'));
+      this.classList.add('active');
+    }));
+  });
+
+  // tooltip on buttons
+  const tip=document.createElement('div');
+  tip.style.cssText='position:fixed;z-index:999;background:#1d1d1f;color:#fff;font-size:12px;padding:6px 10px;border-radius:8px;pointer-events:none;opacity:0;transition:opacity .12s;max-width:240px;box-shadow:0 6px 20px rgba(0,0,0,.25)';
+  document.body.appendChild(tip);
+  document.querySelectorAll('.btn,.dotmenu,.chip').forEach(el=>{
+    el.addEventListener('mouseenter',e=>{
+      const t=e.target.getAttribute('title')||e.target.textContent.trim();
+      if(t){tip.textContent=t;tip.style.opacity='1';
+        const r=e.target.getBoundingClientRect();
+        tip.style.left=Math.min(r.left,innerWidth-260)+'px';
+        tip.style.top=(r.top-tip.offsetHeight-8)+'px';}
+    });
+    el.addEventListener('mouseleave',()=>tip.style.opacity='0');
+  });
+</script>
+</body>
+</html>

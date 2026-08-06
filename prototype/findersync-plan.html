@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Foldesk 右键菜单扩展 · 方案稿 v2</title>
+<style>
+  :root{
+    --bg:#f6f7f4; --card:#ffffff; --ink:#2b2f33; --sub:#8a9099;
+    --line:#e7e9e4; --accent:#7d9b88; --accent-soft:#eef3ef; --warn:#c98a6a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;
+    padding:32px;line-height:1.5;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .meta{color:var(--sub);font-size:13px;margin-bottom:24px;}
+  .grid{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;}
+  .col{flex:1;min-width:280px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:18px 20px;box-shadow:0 6px 20px rgba(0,0,0,.04);}
+  .card h2{font-size:14px;margin:0 0 14px;color:var(--sub);font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;}
+
+  .menu{width:260px;border:1px solid var(--line);border-radius:12px;
+    background:#fff;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.12);}
+  .mi{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;
+    font-size:13.5px;position:relative;}
+  .mi:hover{background:var(--accent-soft);}
+  .mi .ic{width:18px;text-align:center;}
+  .mi .arrow{margin-left:auto;color:var(--sub);}
+  .sep{height:1px;background:var(--line);margin:5px 4px;}
+  .sub{margin-left:14px;font-size:12px;color:var(--sub);}
+  .new{margin-left:14px;font-size:12px;color:var(--accent);}
+
+  .row{display:flex;align-items:center;justify-content:space-between;
+    padding:12px 0;border-bottom:1px solid var(--line);}
+  .row:last-child{border-bottom:none;}
+  .row .t{font-size:13.5px;}
+  .row .d{font-size:12px;color:var(--sub);margin-top:2px;}
+  .switch{width:42px;height:24px;border-radius:14px;background:var(--accent);
+    position:relative;flex:none;}
+  .switch::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;
+    background:#fff;top:3px;right:3px;}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);
+    color:var(--accent);border-radius:20px;padding:5px 12px;font-size:12.5px;margin:4px 6px 4px 0;}
+  .pill .x{color:var(--sub);cursor:pointer;}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;
+    padding:8px 14px;font-size:13px;cursor:pointer;}
+  .btn.ghost{background:var(--accent-soft);color:var(--accent);}
+  .hint{font-size:12px;color:var(--warn);background:#fbf2ec;border-radius:10px;
+    padding:10px 12px;margin-top:12px;}
+
+  .arch{margin-top:24px;}
+  .arch .card{padding:16px 20px;}
+  .arch ul{margin:6px 0 0;padding-left:18px;font-size:13px;}
+  .arch li{margin:6px 0;}
+  code{background:var(--accent-soft);color:var(--accent);border-radius:6px;
+    padding:1px 6px;font-size:12px;}
+  .tag{font-size:11px;background:var(--accent-soft);color:var(--accent);
+    border-radius:6px;padding:2px 7px;margin-left:6px;}
+</style>
+</head>
+<body>
+  <h1>Foldesk 右键菜单扩展 · 方案稿 v2</h1>
+  <div class="meta">对齐你截图里的超级右键 ｜ SwiftPM + ad-hoc 签名 + 未沙盒 ｜ Finder Sync Extension（.appex）</div>
+
+  <div class="grid">
+    <!-- 左：Finder 菜单 -->
+    <div class="col">
+      <div class="card">
+        <h2>在 Finder / 桌面右键后看到的菜单</h2>
+        <div class="menu">
+          <div class="mi" style="color:var(--sub)"><span class="ic">📁</span>新建文件夹</div>
+          <div class="sep"></div>
+          <div class="mi"><span class="ic">📄</span>新建文件<span class="arrow">▸</span></div>
+          <div class="new">Microsoft Excel .xlsx ／ Microsoft Word .docx ／ 文本文档 .txt ／ Markdown .md ／ 空文件</div>
+          <div class="mi"><span class="ic">📂</span>常用目录<span class="arrow">▸</span></div>
+          <div class="sub">下载 ／ 桌面 ／ 文稿 ／ + 收藏文件夹</div>
+          <div class="mi"><span class="ic">📋</span>拷贝路径</div>
+          <div class="mi"><span class="ic">➕</span>添加到常用目录</div>
+          <div class="sep"></div>
+          <div class="mi"><span class="ic">👁</span>显示所有文件</div>
+          <div class="mi"><span class="ic">🙈</span>隐藏所有文件</div>
+          <div class="mi"><span class="ic">💻</span>进入终端</div>
+        </div>
+        <div class="hint">说明：新建 Excel/Word 靠内置空白模板复制重命名；显隐文件靠 <code>defaults write com.apple.finder AppleShowAllFiles</code> + 重启 Finder。首次需在 系统设置→扩展→Finder 启用。</div>
+      </div>
+    </div>
+
+    <!-- 右：设置面板 -->
+    <div class="col">
+      <div class="card">
+        <h2>Foldesk 内新增「右键菜单」设置页</h2>
+        <div class="row">
+          <div><div class="t">启用 Finder 右键菜单</div>
+            <div class="d">开启后扩展才会在 Finder 显示菜单项</div></div>
+          <div class="switch"></div>
+        </div>
+        <div class="row" style="display:block;">
+          <div class="t">常用目录（点击打开 / 复制到 / 移动到）</div>
+          <div class="d" style="margin:8px 0 4px;">默认含下载/桌面/文稿，可增删</div>
+          <div>
+            <span class="pill">📥 下载 <span class="x">×</span></span>
+            <span class="pill">🖥 桌面 <span class="x">×</span></span>
+            <span class="pill">📄 文稿 <span class="x">×</span></span>
+          </div>
+          <button class="btn ghost" style="margin-top:10px;">+ 添加文件夹</button>
+        </div>
+        <div class="row" style="display:block;">
+          <div class="t">新建文件模板</div>
+          <div class="d" style="margin:8px 0 4px;">勾选右键里要出现的项；Excel/Word 需要内置空白模板</div>
+          <div>
+            <span class="pill">✓ Excel .xlsx</span>
+            <span class="pill">✓ Word .docx</span>
+            <span class="pill">✓ 文本 .txt</span>
+            <span class="pill">✓ Markdown .md</span>
+            <span class="pill">✓ 空文件</span>
+          </div>
+        </div>
+        <div class="hint">配置写入 <code>~/Library/Application Support/Foldesk/findersync.json</code>，扩展直接读取（ad-hoc 签名下不用 App Group）。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch">
+    <div class="card">
+      <h2 style="color:var(--sub);font-size:13px;letter-spacing:.04em;">将要改动 / 新增的内容 <span class="tag">未开始写码</span></h2>
+      <ul>
+        <li>新增扩展 target <code>Sources/FoldeskFinderSync/</code>，实现 <code>FIFinderSyncProtocol</code>，构建为 <code>.appex</code></li>
+        <li>在 app bundle 中内置空白模板：<code>Resources/Templates/Empty.xlsx</code>、<code>Empty.docx</code> 等</li>
+        <li>新增扩展的 Info.plist + 未沙盒 entitlements</li>
+        <li>主 app 新增「右键菜单」设置页，写入共享配置文件</li>
+        <li>修改 <code>scripts/build-app.sh</code>：编译扩展 → 签名 → 嵌入 <code>Contents/PlugIns/FoldeskFinderSync.appex</code></li>
+        <li>README 增加启用 Finder 扩展的指引</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

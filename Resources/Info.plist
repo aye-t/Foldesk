@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>zh_CN</string>
+    <key>CFBundleDisplayName</key>
+    <string>Foldesk</string>
+    <key>CFBundleExecutable</key>
+    <string>Foldesk</string>
+    <key>CFBundleIconFile</key>
+    <string>FoldeskIcon</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.foldesk.mac</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>Foldesk</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>Foldesk 需要辅助功能权限来读取、聚焦、缩小和关闭其他应用的窗口。</string>
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>Foldesk 需要屏幕录制权限来生成窗口缩略图。窗口画面仅在本机处理，不会上传。</string>
+</dict>
+</plist>

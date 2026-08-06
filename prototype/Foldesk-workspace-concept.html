@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Foldesk 工作区交互概念</title>
+  <style>
+    :root {
+      --blue:#1670f8;
+      --blue-2:#0f5fd8;
+      --ink:#182033;
+      --muted:#687083;
+      --line:rgba(31,42,68,.11);
+      --panel:rgba(255,255,255,.88);
+      --green:#28b86a;
+      --orange:#f59b23;
+      --red:#f05252;
+      --shadow:0 24px 70px rgba(33,55,96,.17),0 2px 10px rgba(33,55,96,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Helvetica Neue",sans-serif;
+      background:
+        radial-gradient(circle at 12% 7%,rgba(92,164,255,.25),transparent 26rem),
+        radial-gradient(circle at 90% 85%,rgba(116,216,190,.19),transparent 25rem),
+        #eef3f9;
+      min-height:100vh;
+    }
+    button,select{font:inherit}
+    button{cursor:pointer}
+    .topbar{
+      height:44px;
+      display:flex;
+      align-items:center;
+      padding:0 24px;
+      gap:14px;
+      border-bottom:1px solid rgba(255,255,255,.65);
+      background:rgba(246,249,253,.76);
+      backdrop-filter:blur(20px);
+      position:sticky;
+      top:0;
+      z-index:20;
+    }
+    .brand-dot{
+      width:26px;height:26px;border-radius:8px;
+      display:grid;place-items:center;color:white;font-size:14px;
+      background:linear-gradient(145deg,#61bbff,#1267ee);
+      box-shadow:inset 0 1px 1px rgba(255,255,255,.5);
+    }
+    .topbar strong{font-size:14px}
+    .topbar .sep{width:1px;height:18px;background:var(--line)}
+    .topbar span{font-size:12px;color:var(--muted)}
+    .topbar .status{margin-left:auto;display:flex;align-items:center;gap:7px}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:#aab2c0}
+    .status-dot.active{background:var(--green);box-shadow:0 0 0 4px rgba(40,184,106,.12)}
+
+    .page{
+      max-width:1500px;
+      margin:0 auto;
+      padding:34px 30px 50px;
+    }
+    .hero{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:24px;
+      margin-bottom:22px;
+    }
+    .eyebrow{font-size:12px;font-weight:750;letter-spacing:.12em;color:var(--blue);text-transform:uppercase}
+    h1{margin:7px 0 8px;font-size:clamp(28px,4vw,48px);letter-spacing:-.045em}
+    .hero p{margin:0;color:var(--muted);font-size:15px;line-height:1.7;max-width:760px}
+    .hero-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.75);
+      color:var(--ink);
+      padding:10px 15px;
+      border-radius:11px;
+      font-weight:650;
+      box-shadow:0 2px 8px rgba(25,42,77,.04);
+    }
+    .btn:hover{background:white}
+    .btn.primary{background:var(--blue);color:white;border-color:transparent}
+    .btn.primary:hover{background:var(--blue-2)}
+    .btn.danger{color:var(--red)}
+    .btn.small{padding:7px 10px;border-radius:9px;font-size:12px}
+    .btn:disabled{opacity:.38;cursor:not-allowed}
+
+    .logic-strip{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:10px;
+      margin-bottom:20px;
+    }
+    .logic-step{
+      min-height:86px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(255,255,255,.62);
+    }
+    .logic-step b{display:block;font-size:13px;margin-bottom:5px}
+    .logic-step small{color:var(--muted);line-height:1.45}
+    .logic-step .num{
+      display:inline-grid;place-items:center;
+      width:21px;height:21px;border-radius:50%;
+      margin-right:6px;background:rgba(22,112,248,.1);color:var(--blue);font-size:11px;
+    }
+
+    .prototype{
+      position:relative;
+      min-height:720px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.8);
+      border-radius:24px;
+      background:
+        linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.14)),
+        linear-gradient(145deg,#b8d8f5 0%,#d7e9f7 45%,#b8d8dd 100%);
+      box-shadow:var(--shadow);
+    }
+    .desktop-top{
+      height:36px;
+      padding:0 15px;
+      display:flex;align-items:center;gap:15px;
+      background:rgba(248,250,253,.78);
+      backdrop-filter:blur(18px);
+      border-bottom:1px solid rgba(255,255,255,.7);
+      font-size:11px;
+      font-weight:650;
+    }
+    .desktop-top .right{margin-left:auto;color:var(--muted);font-weight:500}
+    .desktop{
+      position:relative;
+      height:684px;
+      padding:24px;
+    }
+    .workspace-badge{
+      position:absolute;top:18px;left:24px;
+      display:flex;align-items:center;gap:9px;
+      padding:9px 12px;border-radius:12px;
+      background:rgba(255,255,255,.72);
+      backdrop-filter:blur(16px);
+      border:1px solid rgba(255,255,255,.8);
+      box-shadow:0 8px 30px rgba(34,55,89,.08);
+      z-index:4;
+    }
+    .workspace-badge .light{width:8px;height:8px;border-radius:50%;background:#a8b1c0}
+    .workspace-badge.active .light{background:var(--green)}
+    .workspace-badge b{font-size:12px}
+    .workspace-badge small{color:var(--muted)}
+
+    .fake-window{
+      position:absolute;
+      width:390px;height:265px;
+      border-radius:17px;
+      border:1px solid rgba(255,255,255,.9);
+      background:rgba(250,252,255,.87);
+      backdrop-filter:blur(18px);
+      box-shadow:0 18px 42px rgba(38,62,95,.19);
+      transition:transform .55s cubic-bezier(.2,.8,.2,1),opacity .4s,width .45s,height .45s,left .45s,top .45s;
+      overflow:hidden;
+    }
+    .fake-window .titlebar{
+      height:38px;display:flex;align-items:center;padding:0 12px;gap:7px;
+      border-bottom:1px solid var(--line);font-size:11px;font-weight:650;
+    }
+    .traffic{width:9px;height:9px;border-radius:50%;background:#ff5f57;box-shadow:15px 0 #febc2e,30px 0 #28c840;margin-right:28px}
+    .fake-window .body{padding:18px}
+    .skeleton{height:10px;border-radius:6px;background:#d9e2ee;margin-bottom:11px}
+    .skeleton.short{width:48%}.skeleton.mid{width:72%}
+    .mail{left:7%;top:110px;transform:rotate(-2deg)}
+    .chat{left:29%;top:280px;transform:rotate(1.4deg)}
+    .word{left:15%;top:120px;opacity:0;pointer-events:none}
+    .browser{left:38%;top:175px;opacity:0;pointer-events:none}
+    .pdf{left:28%;top:340px;opacity:0;pointer-events:none}
+    .fake-window.minimized{
+      opacity:.08;
+      transform:translateY(430px) scale(.08);
+      pointer-events:none;
+    }
+    .fake-window.open{opacity:1;pointer-events:auto}
+    .fake-window.slot-1{left:4%;top:76px;width:49%;height:565px;transform:none}
+    .fake-window.slot-2{left:54%;top:76px;width:29%;height:270px;transform:none}
+    .fake-window.slot-3{left:54%;top:365px;width:29%;height:276px;transform:none}
+
+    .dock{
+      position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+      display:flex;align-items:end;gap:7px;padding:8px 11px;
+      border-radius:16px;background:rgba(248,250,253,.68);backdrop-filter:blur(22px);
+      border:1px solid rgba(255,255,255,.8);z-index:3;
+    }
+    .dock-icon{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:white;box-shadow:0 3px 12px rgba(39,52,78,.15);font-size:17px}
+
+    .controller{
+      position:absolute;
+      right:16px;top:64px;
+      width:370px;height:590px;
+      z-index:8;
+      border:1px solid rgba(255,255,255,.88);
+      border-radius:20px;
+      background:rgba(248,250,253,.9);
+      backdrop-filter:blur(28px) saturate(1.15);
+      box-shadow:0 24px 70px rgba(23,44,79,.26);
+      transition:width .35s,height .35s,transform .35s,opacity .3s;
+      overflow:hidden;
+    }
+    .controller.hidden{opacity:0;transform:translateX(26px);pointer-events:none}
+    .controller.collapsed{width:62px;height:176px;top:240px;border-radius:18px}
+    .controller.collapsed .expanded-content{display:none}
+    .collapsed-content{display:none;width:100%;height:100%;padding:8px}
+    .controller.collapsed .collapsed-content{display:block}
+    .edge-trigger{
+      width:100%;height:100%;border:0;border-radius:13px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+      color:var(--ink);background:linear-gradient(180deg,#fff,#edf4ff);
+    }
+    .edge-trigger .bag{font-size:20px}
+    .edge-trigger small{font-size:10px;color:var(--muted)}
+    .controller-head{
+      height:70px;display:flex;align-items:center;gap:10px;padding:13px 14px;
+      border-bottom:1px solid var(--line);
+    }
+    .workspace-icon{
+      width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+      color:white;background:linear-gradient(145deg,#63b8ff,#1269f2);
+    }
+    .controller-head .meta{min-width:0}
+    .controller-head b{display:block;font-size:14px}
+    .controller-head small{color:var(--muted);font-size:10px}
+    .head-actions{margin-left:auto;display:flex;gap:5px}
+    .icon-btn{
+      width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:var(--ink);
+      display:grid;place-items:center;
+    }
+    .icon-btn:hover{background:rgba(30,48,80,.07)}
+    .icon-btn.red{color:var(--red)}
+
+    .tabs{display:flex;gap:4px;padding:9px 11px;border-bottom:1px solid var(--line)}
+    .tab{flex:1;border:0;border-radius:8px;background:transparent;padding:7px;font-size:11px;font-weight:650;color:var(--muted)}
+    .tab.active{color:var(--blue);background:rgba(22,112,248,.1)}
+    .controller-body{height:438px;overflow:auto;padding:10px}
+    .pane{display:none}.pane.active{display:block}
+    .section-title{display:flex;align-items:center;margin:3px 2px 8px;font-size:10px;color:var(--muted);font-weight:700}
+    .section-title span{margin-left:auto}
+    .app-row{
+      display:flex;align-items:center;gap:9px;
+      min-height:58px;padding:8px;border-radius:12px;margin-bottom:7px;
+      background:rgba(255,255,255,.76);border:1px solid rgba(33,48,76,.06);
+    }
+    .app-icon{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:white;font-weight:750;flex:0 0 auto}
+    .app-info{min-width:0;flex:1}
+    .app-info b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .app-info small{font-size:9px;color:var(--muted)}
+    .app-actions{display:flex;gap:3px}
+    .app-actions button{width:25px;height:25px;border:0;border-radius:7px;background:transparent;font-size:11px}
+    .app-actions button:hover{background:rgba(20,42,74,.07)}
+    .mode-select{max-width:86px;border:1px solid var(--line);border-radius:7px;background:white;padding:4px;font-size:9px}
+    .remove-app{color:var(--red)}
+    .controller-foot{
+      height:52px;padding:8px 11px;border-top:1px solid var(--line);display:flex;gap:7px;
+    }
+    .controller-foot .btn{flex:1;padding:8px;font-size:11px}
+
+    .layout-presets{display:flex;gap:6px;margin-bottom:10px}
+    .preset{flex:1;border:1px solid var(--line);background:white;border-radius:9px;padding:7px 4px;font-size:9px;color:var(--muted)}
+    .preset.active{border-color:var(--blue);color:var(--blue);background:rgba(22,112,248,.06)}
+    .layout-board{
+      position:relative;height:245px;border-radius:14px;padding:8px;
+      background:#172238;display:grid;grid-template-columns:1.35fr .9fr;grid-template-rows:1fr 1fr;gap:7px;
+    }
+    .slot{
+      border:1px dashed rgba(255,255,255,.35);border-radius:9px;
+      display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;
+      color:rgba(255,255,255,.75);font-size:9px;background:rgba(255,255,255,.05);
+      transition:.2s;
+    }
+    .slot:first-child{grid-row:1/3}
+    .slot.dragover{border-color:#63b8ff;background:rgba(74,154,255,.2)}
+    .slot .assigned{padding:6px 8px;border-radius:8px;background:white;color:var(--ink);font-weight:700}
+    .app-pool{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0}
+    .drag-app{border:1px solid var(--line);border-radius:8px;background:white;padding:6px 8px;font-size:10px;cursor:grab}
+    .layout-note{font-size:9px;color:var(--muted);line-height:1.5}
+
+    .add-modal{
+      position:absolute;inset:0;z-index:30;display:none;place-items:center;
+      background:rgba(18,30,51,.26);backdrop-filter:blur(5px);
+    }
+    .add-modal.open{display:grid}
+    .modal-card{width:min(440px,90%);padding:18px;border-radius:18px;background:white;box-shadow:var(--shadow)}
+    .modal-card h3{margin:0 0 4px;font-size:18px}.modal-card p{margin:0 0 14px;color:var(--muted);font-size:12px}
+    .app-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .candidate{border:1px solid var(--line);border-radius:11px;background:#f8fafc;padding:12px 8px;text-align:center}
+    .candidate:hover{border-color:var(--blue);background:#f2f7ff}
+    .candidate .emoji{display:block;font-size:22px;margin-bottom:4px}.candidate b{font-size:11px}
+    .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+
+    .decision-grid{
+      display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-top:20px;
+    }
+    .decision-card{
+      border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.68);padding:18px;
+    }
+    .decision-card h2{font-size:16px;margin:0 0 12px}
+    .decision-card ul{margin:0;padding-left:18px;color:var(--muted);font-size:13px;line-height:1.75}
+    .quote{font-size:17px;font-weight:750;line-height:1.6;margin:0}
+    .quote em{font-style:normal;color:var(--blue)}
+    .event-log{
+      margin-top:12px;padding:11px;border-radius:11px;background:#172238;color:#c9d5e8;
+      font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;min-height:58px;
+    }
+    .toast{
+      position:absolute;left:50%;bottom:72px;transform:translate(-50%,20px);
+      padding:10px 14px;border-radius:999px;background:#172238;color:white;font-size:11px;
+      box-shadow:0 12px 30px rgba(20,35,59,.25);opacity:0;pointer-events:none;transition:.25s;z-index:40;
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    @media(max-width:980px){
+      .logic-strip{grid-template-columns:repeat(2,1fr)}
+      .prototype{min-height:760px}
+      .controller{right:10px}
+      .decision-grid{grid-template-columns:1fr}
+      .hero{align-items:flex-start;flex-direction:column}
+      .hero-actions{justify-content:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-dot">▰</div>
+    <strong>Foldesk</strong>
+    <div class="sep"></div>
+    <span>工作区逻辑可视化 · Concept V2</span>
+    <div class="status">
+      <i id="topStatusDot" class="status-dot"></i>
+      <span id="topStatus">尚未进入工作区</span>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Interactive product concept</div>
+        <h1>工作区不是“打开全部”，而是进入任务控制台</h1>
+        <p>点击下面的“进入论文工作区”，体验无关窗口最小化、悬浮控制器出现、应用按需启动、控制器内编辑，以及应用与分屏槽位绑定。</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn" id="undoBtn" disabled>撤销进入</button>
+        <button class="btn primary" id="enterBtn">进入论文工作区</button>
+      </div>
+    </section>
+
+    <section class="logic-strip" aria-label="工作区流程">
+      <article class="logic-step"><b><span class="num">1</span>保存快照</b><small>只用于手动撤销，不在结束时自动恢复。</small></article>
+      <article class="logic-step"><b><span class="num">2</span>最小化无关窗口</b><small>默认不关闭、不退出，避免未保存内容风险。</small></article>
+      <article class="logic-step"><b><span class="num">3</span>出现控制器</b><small>成员应用默认按需打开，保留“打开全部”按钮。</small></article>
+      <article class="logic-step"><b><span class="num">4</span>边用边编辑</b><small>添加应用、调整启动方式、移除成员都在控制器内完成。</small></article>
+      <article class="logic-step"><b><span class="num">5</span>绑定分屏槽位</b><small>应用打开后进入指定位置，空槽位不会强制启动软件。</small></article>
+    </section>
+
+    <section class="prototype" aria-label="Foldesk 工作区交互原型">
+      <div class="desktop-top">
+        <span>●</span><b>桌面</b><span>文件</span><span>编辑</span><span>显示</span>
+        <span class="right">7月26日 周日　18:30</span>
+      </div>
+      <div class="desktop">
+        <div id="workspaceBadge" class="workspace-badge">
+          <i class="light"></i>
+          <div><b id="badgeTitle">普通桌面</b><br><small id="badgeDetail">当前应用自由排列</small></div>
+        </div>
+
+        <div class="fake-window unrelated mail">
+          <div class="titlebar"><i class="traffic"></i>邮件 · 收件箱</div>
+          <div class="body"><div class="skeleton mid"></div><div class="skeleton"></div><div class="skeleton short"></div></div>
+        </div>
+        <div class="fake-window unrelated chat">
+          <div class="titlebar"><i class="traffic"></i>微信 · 工作群</div>
+          <div class="body"><div class="skeleton short"></div><div class="skeleton mid"></div><div class="skeleton"></div></div>
+        </div>
+
+        <div id="wordWindow" class="fake-window member-window word">
+          <div class="titlebar"><i class="traffic"></i>Word · 毕业论文.docx</div>
+          <div class="body"><div class="skeleton mid"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton short"></div></div>
+        </div>
+        <div id="browserWindow" class="fake-window member-window browser">
+          <div class="titlebar"><i class="traffic"></i>Safari · 文献检索</div>
+          <div class="body"><div class="skeleton short"></div><div class="skeleton"></div><div class="skeleton mid"></div></div>
+        </div>
+        <div id="pdfWindow" class="fake-window member-window pdf">
+          <div class="titlebar"><i class="traffic"></i>预览 · 参考文献.pdf</div>
+          <div class="body"><div class="skeleton mid"></div><div class="skeleton mid"></div><div class="skeleton short"></div></div>
+        </div>
+
+        <div class="dock" aria-label="程序坞">
+          <div class="dock-icon">🧭</div><div class="dock-icon">💬</div><div class="dock-icon">📁</div>
+          <div class="dock-icon">📝</div><div class="dock-icon">📚</div>
+        </div>
+
+        <aside id="controller" class="controller hidden" aria-label="论文工作区控制器">
+          <div class="collapsed-content">
+            <button id="expandController" class="edge-trigger" aria-label="展开工作区控制器">
+              <span class="bag">💼</span><span>‹</span><small id="edgeCount">4</small>
+            </button>
+          </div>
+          <div class="expanded-content">
+            <div class="controller-head">
+              <div class="workspace-icon">论</div>
+              <div class="meta"><b>论文工作区</b><small id="controllerMeta">4 个应用 · 1 个自动打开</small></div>
+              <div class="head-actions">
+                <button id="editBtn" class="icon-btn" title="编辑工作区">✎</button>
+                <button id="collapseController" class="icon-btn" title="收起到屏幕边缘">›</button>
+              </div>
+            </div>
+            <div class="tabs">
+              <button class="tab active" data-pane="appsPane">应用</button>
+              <button class="tab" data-pane="layoutPane">分屏布局</button>
+            </div>
+            <div class="controller-body">
+              <div id="appsPane" class="pane active">
+                <div class="section-title">成员应用 <span id="editHint">点击应用按需打开</span></div>
+                <div id="appList"></div>
+                <button id="addAppBtn" class="btn small" style="width:100%">＋ 添加应用</button>
+              </div>
+              <div id="layoutPane" class="pane">
+                <div class="section-title">绑定布局 <span>拖动应用到槽位</span></div>
+                <div class="layout-presets">
+                  <button class="preset" data-layout="half">左右分屏</button>
+                  <button class="preset active" data-layout="left-two">左一右二</button>
+                  <button class="preset" data-layout="grid">四宫格</button>
+                </div>
+                <div class="layout-board">
+                  <div class="slot" data-slot="0"><small>左侧 60%</small><div class="assigned" id="slot0">Word</div></div>
+                  <div class="slot" data-slot="1"><small>右上</small><div class="assigned" id="slot1">Safari</div></div>
+                  <div class="slot" data-slot="2"><small>右下</small><div class="assigned" id="slot2">预览 PDF</div></div>
+                </div>
+                <div id="appPool" class="app-pool"></div>
+                <p class="layout-note">打开某个应用时，只把该应用放进绑定槽位；尚未打开的应用保持空槽，不会被强制启动。</p>
+                <button id="applyLayoutBtn" class="btn primary small" style="width:100%">应用到已打开的窗口</button>
+              </div>
+            </div>
+            <div class="controller-foot">
+              <button id="openAllBtn" class="btn">打开全部</button>
+              <button id="endBtn" class="btn danger">结束工作区</button>
+            </div>
+          </div>
+        </aside>
+
+        <div id="toast" class="toast" role="status"></div>
+
+        <div id="addModal" class="add-modal" role="dialog" aria-modal="true" aria-label="添加应用">
+          <div class="modal-card">
+            <h3>添加到论文工作区</h3>
+            <p>添加后默认按需打开，可以在编辑模式中改为自动打开。</p>
+            <div id="candidateGrid" class="app-grid"></div>
+            <div class="modal-actions"><button id="closeModal" class="btn small">完成</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="decision-grid">
+      <article class="decision-card">
+        <h2>本次建议确认的产品边界</h2>
+        <ul>
+          <li>进入工作区默认最小化无关窗口，不直接关闭或退出。</li>
+          <li>成员应用默认按需打开；自动打开是每个应用的可选属性。</li>
+          <li>控制器既是启动器，也是持续存在的工作区操作面板。</li>
+          <li>编辑、添加应用和分屏绑定全部在控制器内完成。</li>
+          <li>结束工作区不自动恢复旧桌面，只保留明确的“撤销进入”。</li>
+        </ul>
+      </article>
+      <article class="decision-card">
+        <h2>一句话定义</h2>
+        <p class="quote">打开工作区，不是打开全部软件；而是<em>清理当前桌面，出现任务控制器，再由用户决定打开什么、放在哪里。</em></p>
+        <div id="eventLog" class="event-log">等待操作…</div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      entered:false,
+      editing:false,
+      pane:"appsPane",
+      apps:[
+        {id:"word",name:"Word",icon:"W",color:"#2867d9",mode:"auto",status:"closed",slot:0},
+        {id:"safari",name:"Safari",icon:"S",color:"#1c9be8",mode:"manual",status:"closed",slot:1},
+        {id:"pdf",name:"预览 PDF",icon:"P",color:"#e15b5b",mode:"manual",status:"closed",slot:2},
+        {id:"finder",name:"Finder",icon:"F",color:"#3298e3",mode:"manual",status:"closed",slot:null}
+      ],
+      candidates:[
+        {id:"wechat",name:"微信",icon:"微",color:"#2cc56f"},
+        {id:"obsidian",name:"Obsidian",icon:"O",color:"#7254d8"},
+        {id:"excel",name:"Excel",icon:"X",color:"#258457"},
+        {id:"zotero",name:"Zotero",icon:"Z",color:"#b93030"},
+        {id:"notes",name:"备忘录",icon:"N",color:"#e6b322"},
+        {id:"figma",name:"Figma",icon:"Fi",color:"#e45e43"}
+      ]
+    };
+
+    const $ = s => document.querySelector(s);
+    const $$ = s => [...document.querySelectorAll(s)];
+    const controller = $("#controller");
+    const toast = $("#toast");
+
+    function log(text){
+      $("#eventLog").textContent = text;
+      toast.textContent = text;
+      toast.classList.add("show");
+      clearTimeout(log.timer);
+      log.timer=setTimeout(()=>toast.classList.remove("show"),1800);
+    }
+
+    function updateSummary(){
+      const autoCount=state.apps.filter(a=>a.mode==="auto").length;
+      $("#controllerMeta").textContent=`${state.apps.length} 个应用 · ${autoCount} 个自动打开`;
+      $("#edgeCount").textContent=state.apps.length;
+      $("#topStatus").textContent=state.entered?"正在使用：论文工作区":"尚未进入工作区";
+      $("#topStatusDot").classList.toggle("active",state.entered);
+      $("#undoBtn").disabled=!state.entered;
+    }
+
+    function renderApps(){
+      const list=$("#appList");
+      list.innerHTML="";
+      state.apps.forEach(app=>{
+        const row=document.createElement("div");
+        row.className="app-row";
+        const statusText={closed:"未运行",running:"运行中",minimized:"已最小化"}[app.status];
+        row.innerHTML=`
+          <div class="app-icon" style="background:${app.color}">${app.icon}</div>
+          <div class="app-info">
+            <b>${app.name}</b>
+            <small>${statusText}${app.slot!==null?` · 槽位 ${app.slot+1}`:" · 未绑定槽位"}</small>
+          </div>
+          ${state.editing?`
+            <select class="mode-select" data-mode="${app.id}" aria-label="${app.name}启动方式">
+              <option value="manual" ${app.mode==="manual"?"selected":""}>按需打开</option>
+              <option value="auto" ${app.mode==="auto"?"selected":""}>自动打开</option>
+            </select>
+            <button class="icon-btn red remove-app" data-remove="${app.id}" title="从工作区移除">×</button>
+          `:`
+            <div class="app-actions">
+              <button data-open="${app.id}" title="${app.status==="closed"?"打开":"显示"}">${app.status==="closed"?"▶":"◉"}</button>
+              <button data-min="${app.id}" title="最小化" ${app.status==="closed"?"disabled":""}>−</button>
+            </div>
+          `}
+        `;
+        list.appendChild(row);
+      });
+      $("#editBtn").textContent=state.editing?"✓":"✎";
+      $("#editHint").textContent=state.editing?"设置启动方式或移除应用":"点击应用按需打开";
+      bindAppEvents();
+      renderPool();
+      updateSummary();
+    }
+
+    function bindAppEvents(){
+      $$("[data-open]").forEach(btn=>btn.onclick=()=>openApp(btn.dataset.open));
+      $$("[data-min]").forEach(btn=>btn.onclick=()=>minimizeApp(btn.dataset.min));
+      $$("[data-remove]").forEach(btn=>btn.onclick=()=>{
+        const app=state.apps.find(a=>a.id===btn.dataset.remove);
+        state.apps=state.apps.filter(a=>a.id!==btn.dataset.remove);
+        log(`已从工作区移除 ${app.name}；不会退出或卸载应用`);
+        renderApps();
+      });
+      $$("[data-mode]").forEach(select=>select.onchange=()=>{
+        const app=state.apps.find(a=>a.id===select.dataset.mode);
+        app.mode=select.value;
+        log(`${app.name} 已设为${select.value==="auto"?"进入时自动打开":"按需打开"}`);
+        renderApps();
+      });
+    }
+
+    function openApp(id){
+      const app=state.apps.find(a=>a.id===id);
+      if(!app)return;
+      app.status="running";
+      const win=$("#"+id+"Window");
+      if(win)win.classList.add("open");
+      log(`${app.name} 已打开${app.slot!==null?`，将进入槽位 ${app.slot+1}`:""}`);
+      renderApps();
+    }
+
+    function minimizeApp(id){
+      const app=state.apps.find(a=>a.id===id);
+      if(!app)return;
+      app.status="minimized";
+      const win=$("#"+id+"Window");
+      if(win)win.classList.remove("open");
+      log(`${app.name} 已最小化；工作区不会再次把它弹回来`);
+      renderApps();
+    }
+
+    function enterWorkspace(){
+      state.entered=true;
+      $(".unrelated.mail").classList.add("minimized");
+      $(".unrelated.chat").classList.add("minimized");
+      controller.classList.remove("hidden","collapsed");
+      $("#workspaceBadge").classList.add("active");
+      $("#badgeTitle").textContent="论文工作区";
+      $("#badgeDetail").textContent="无关窗口已最小化 · 等待你的选择";
+      state.apps.filter(a=>a.mode==="auto").forEach(a=>openApp(a.id));
+      $("#enterBtn").textContent="重新进入";
+      updateSummary();
+      log("已进入论文工作区：只自动打开设置为“自动”的应用");
+    }
+
+    function undoEnter(){
+      state.entered=false;
+      $(".unrelated.mail").classList.remove("minimized");
+      $(".unrelated.chat").classList.remove("minimized");
+      $$(".member-window").forEach(w=>w.classList.remove("open","slot-1","slot-2","slot-3"));
+      state.apps.forEach(a=>a.status="closed");
+      controller.classList.add("hidden");
+      $("#workspaceBadge").classList.remove("active");
+      $("#badgeTitle").textContent="普通桌面";
+      $("#badgeDetail").textContent="已撤销进入工作区";
+      $("#enterBtn").textContent="进入论文工作区";
+      renderApps();
+      updateSummary();
+      log("已撤销进入，恢复进入前的桌面快照");
+    }
+
+    function renderPool(){
+      const pool=$("#appPool");
+      pool.innerHTML="";
+      state.apps.forEach(app=>{
+        const chip=document.createElement("button");
+        chip.className="drag-app";
+        chip.draggable=true;
+        chip.dataset.app=app.id;
+        chip.textContent=app.name;
+        chip.addEventListener("dragstart",e=>e.dataTransfer.setData("text/plain",app.id));
+        pool.appendChild(chip);
+      });
+      [0,1,2].forEach(i=>{
+        const slot=state.apps.find(a=>a.slot===i);
+        $("#slot"+i).textContent=slot?slot.name:"空槽位";
+      });
+    }
+
+    function applyLayout(){
+      $$(".member-window").forEach(w=>w.classList.remove("slot-1","slot-2","slot-3"));
+      state.apps.filter(a=>a.status==="running"&&a.slot!==null).forEach(app=>{
+        const win=$("#"+app.id+"Window");
+        if(win)win.classList.add(`slot-${app.slot+1}`,"open");
+      });
+      log("已排列当前打开的成员应用；未打开的软件没有被强制启动");
+    }
+
+    function openAll(){
+      state.apps.forEach(a=>openApp(a.id));
+      log("已按用户要求打开全部成员应用");
+    }
+
+    function endWorkspace(){
+      state.entered=false;
+      controller.classList.add("hidden");
+      state.apps.forEach(a=>a.status=a.status==="closed"?"closed":"minimized");
+      $$(".member-window").forEach(w=>w.classList.remove("open"));
+      $("#workspaceBadge").classList.remove("active");
+      $("#badgeTitle").textContent="工作区已结束";
+      $("#badgeDetail").textContent="没有自动恢复旧桌面，可手动撤销进入";
+      updateSummary();renderApps();
+      log("已结束工作区：成员窗口已收起，旧桌面未自动恢复");
+    }
+
+    $("#enterBtn").onclick=enterWorkspace;
+    $("#undoBtn").onclick=undoEnter;
+    $("#collapseController").onclick=()=>{controller.classList.add("collapsed");log("控制器已收起到屏幕边缘")};
+    $("#expandController").onclick=()=>{controller.classList.remove("collapsed");log("控制器已展开")};
+    $("#editBtn").onclick=()=>{state.editing=!state.editing;renderApps();log(state.editing?"进入编辑模式":"编辑已完成")};
+    $("#addAppBtn").onclick=()=>$("#addModal").classList.add("open");
+    $("#closeModal").onclick=()=>$("#addModal").classList.remove("open");
+    $("#addModal").onclick=e=>{if(e.target.id==="addModal")e.currentTarget.classList.remove("open")};
+    $("#openAllBtn").onclick=openAll;
+    $("#endBtn").onclick=endWorkspace;
+    $("#applyLayoutBtn").onclick=applyLayout;
+
+    $$(".tab").forEach(tab=>tab.onclick=()=>{
+      $$(".tab").forEach(t=>t.classList.toggle("active",t===tab));
+      $$(".pane").forEach(p=>p.classList.toggle("active",p.id===tab.dataset.pane));
+      state.pane=tab.dataset.pane;
+    });
+    $$(".preset").forEach(btn=>btn.onclick=()=>{
+      $$(".preset").forEach(p=>p.classList.toggle("active",p===btn));
+      log(`已选择布局：${btn.textContent}（原型重点演示左一右二槽位）`);
+    });
+    $$(".slot").forEach(slot=>{
+      slot.addEventListener("dragover",e=>{e.preventDefault();slot.classList.add("dragover")});
+      slot.addEventListener("dragleave",()=>slot.classList.remove("dragover"));
+      slot.addEventListener("drop",e=>{
+        e.preventDefault();slot.classList.remove("dragover");
+        const id=e.dataTransfer.getData("text/plain");
+        const target=Number(slot.dataset.slot);
+        const moving=state.apps.find(a=>a.id===id);
+        const occupied=state.apps.find(a=>a.slot===target);
+        if(occupied)occupied.slot=moving.slot;
+        moving.slot=target;
+        renderApps();
+        log(`${moving.name} 已绑定到槽位 ${target+1}`);
+      });
+    });
+
+    function renderCandidates(){
+      const grid=$("#candidateGrid");
+      grid.innerHTML="";
+      state.candidates.forEach(c=>{
+        const btn=document.createElement("button");
+        btn.className="candidate";
+        btn.innerHTML=`<span class="emoji">${c.icon}</span><b>${c.name}</b>`;
+        btn.onclick=()=>{
+          if(state.apps.some(a=>a.id===c.id)){log(`${c.name} 已经在工作区中`);return}
+          state.apps.push({...c,mode:"manual",status:"closed",slot:null});
+          renderApps();
+          log(`已添加 ${c.name}，默认按需打开`);
+        };
+        grid.appendChild(btn);
+      });
+    }
+
+    renderCandidates();
+    renderApps();
+    updateSummary();
+  </script>
+</body>
+</html>
