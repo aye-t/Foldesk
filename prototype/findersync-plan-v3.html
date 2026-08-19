@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foldesk 右键菜单 · 第一批功能方案 v3</title>
+<style>
+  :root{ --bg:#f5f6f8; --card:#fff; --line:#e3e5ea; --ink:#1f2330; --sub:#6b7280; --accent:#4f7cff; --new:#e8f0ff; --newbd:#4f7cff; --ok:#2fae66; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);padding:28px;}
+  h1{font-size:20px;margin:0 0 4px}
+  .meta{color:var(--sub);font-size:13px;margin-bottom:22px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .card h2{font-size:15px;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .tag{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--new);color:var(--newbd);border:1px solid var(--newbd);font-weight:600}
+  .tag.old{background:#f0f1f4;color:#9aa1ad;border-color:#e3e5ea}
+  /* menu tree */
+  .menu{border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid #f0f1f4}
+  .row:last-child{border-bottom:none}
+  .row.sub{background:#fafbfc;padding-left:26px;color:var(--sub)}
+  .row .n{font-size:10px;padding:1px 6px;border-radius:5px}
+  .row .n.add{background:var(--new);color:var(--newbd);border:1px solid var(--newbd)}
+  .row .n.exist{background:#f0f1f4;color:#9aa1ad}
+  .grp{font-size:11px;color:var(--sub);padding:5px 12px;background:#f7f8fa;font-weight:600;letter-spacing:.3px}
+  /* settings */
+  .set{font-size:13px}
+  .set .item{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0f1f4}
+  .set .item:last-child{border-bottom:none}
+  .set .desc{color:var(--sub);font-size:12px;margin-top:2px}
+  .sw{width:38px;height:22px;border-radius:11px;background:var(--accent);position:relative;flex:none}
+  .sw::after{content:"";position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#fff}
+  .sw.off{background:#d3d6dd}
+  .sw.off::after{left:2px;right:auto}
+  .applist{border:1px solid var(--line);border-radius:8px;margin-top:8px;font-size:12px}
+  .applist .a{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-bottom:1px solid #f0f1f4}
+  .applist .a:last-child{border-bottom:none}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:7px}
+  code{background:#f0f1f4;padding:2px 6px;border-radius:5px;font-size:12px}
+  .foot{margin-top:18px;color:var(--sub);font-size:12px;line-height:1.7}
+  ul{margin:8px 0 0;padding-left:18px;font-size:12px;color:var(--sub);line-height:1.8}
+</style>
+</head>
+<body>
+<h1>Foldesk 右键菜单 · 第一批功能方案 v3</h1>
+<div class="meta">在 v2 已实现的菜单基础上新增 6 项（PPT 新建 / 拷贝文件名 / 发送到桌面 / 用指定 App 打开 / 压缩解压 / 彻底删除）。本页仅展示「改完长什么样」，尚未动源码。</div>
+
+<div class="grid">
+  <!-- 左：Finder 右键菜单 -->
+  <div class="card">
+    <h2>① Finder 右键菜单（最终结构）</h2>
+    <div class="menu">
+      <div class="row"><span>📄 新建文件</span><span class="n exist">已有</span></div>
+      <div class="row sub">Excel · Word · <b>PPT ⭐新</b> · TXT · Markdown · 空文件</div>
+      <div class="row"><span>📁 复制文件到 ▸</span><span class="n exist">已有</span></div>
+      <div class="row"><span>📁 移动文件到 ▸</span><span class="n exist">已有</span></div>
+      <div class="row"><span>🚀 用…打开 ▸</span><span class="n add">新增</span></div>
+      <div class="row sub">Visual Studio Code · Typora · 预览 · ＋添加 App</div>
+      <div class="row"><span>⭐ 常用目录 ▸</span><span class="n exist">已有</span></div>
+      <div class="grp">— 文件操作 —</div>
+      <div class="row"><span>📋 拷贝路径</span><span class="n exist">已有</span></div>
+      <div class="row"><span>🏷 拷贝文件名</span><span class="n add">新增</span></div>
+      <div class="row"><span>🖥 发送到桌面（替身）</span><span class="n add">新增</span></div>
+      <div class="row"><span>🗜 压缩为 zip</span><span class="n add">新增</span></div>
+      <div class="row"><span>📂 解压到当前文件夹</span><span class="n add">新增</span></div>
+      <div class="row"><span>🗑 彻底删除…</span><span class="n add">新增·需确认</span></div>
+      <div class="grp">— 系统类 —</div>
+      <div class="row"><span>➕ 添加到常用目录</span><span class="n exist">已有</span></div>
+      <div class="row"><span>👁 显示/隐藏所有文件</span><span class="n exist">已有</span></div>
+      <div class="row"><span>⌘ 进入终端</span><span class="n exist">已有</span></div>
+    </div>
+  </div>
+
+  <!-- 右：设置页 -->
+  <div class="card">
+    <h2>② 主程序「右键菜单」设置页新增</h2>
+    <div class="set">
+      <div class="item">
+        <div><div>新建文件 · PPT</div><div class="desc">生成空白 .pptx（python-pptx 内置模板）</div></div>
+        <div class="sw"></div>
+      </div>
+      <div class="item">
+        <div><div>拷贝文件名</div><div class="desc">复制纯文件名（不含路径）</div></div>
+        <div class="sw"></div>
+      </div>
+      <div class="item">
+        <div><div>发送到桌面（替身）</div><div class="desc">在桌面创建选中文件的 alias</div></div>
+        <div class="sw"></div>
+      </div>
+      <div class="item">
+        <div><div>压缩 / 解压</div><div class="desc">zip 系统原生；7z 检测到才显示</div></div>
+        <div class="sw"></div>
+      </div>
+      <div class="item">
+        <div><div>彻底删除</div><div class="desc">跳过废纸篓，弹窗二次确认</div></div>
+        <div class="sw"></div>
+      </div>
+      <div class="item" style="display:block">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>用指定 App 打开</div>
+          <div class="sw"></div>
+        </div>
+        <div class="desc" style="margin-bottom:6px">可增删 App（按名称或路径识别，自动取其图标）</div>
+        <div class="applist">
+          <div class="a"><span><span class="dot"></span>Visual Studio Code</span><span>移除</span></div>
+          <div class="a"><span><span class="dot"></span>Typora</span><span>移除</span></div>
+          <div class="a"><span><span class="dot"></span>预览</span><span>移除</span></div>
+          <div class="a"><span style="color:var(--accent)">＋ 添加 App…</span><span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <h2>③ 共享配置 JSON 变化（<code>~/Library/Application Support/Foldesk/findersync.json</code>）</h2>
+  <pre style="background:#0f1320;color:#cfe3ff;padding:14px;border-radius:10px;font-size:12px;overflow:auto"><code>{
+  "enabled": true,
+  "favoriteDirs": ["~/Downloads","~/Desktop","~/Documents"],
+  "newFileTemplates": [
+    {"ext":"xlsx","name":"Excel","enabled":true},
+    {"ext":"docx","name":"Word","enabled":true},
+    {"ext":"pptx","name":"PPT","enabled":true},   // ⭐ 新增
+    {"ext":"txt","name":"TXT","enabled":true},
+    {"ext":"md","name":"Markdown","enabled":true},
+    {"ext":"empty","name":"空文件","enabled":true}
+  ],
+  "features": {
+    "copyName": true,        // ⭐ 新增
+    "sendAliasToDesktop": true, // ⭐ 新增
+    "compress": true,        // ⭐ 新增
+    "extract": true,         // ⭐ 新增
+    "permanentDelete": true  // ⭐ 新增（强制确认）
+  },
+  "openWithApps": [          // ⭐ 新增
+    {"name":"Visual Studio Code","bundleId":"com.microsoft.VSCode"},
+    {"name":"Typora","bundleId":"abnerworks.Typora"},
+    {"name":"预览","bundleId":"com.apple.Preview"}
+  ]
+}</code></pre>
+</div>
+
+<div class="foot">
+<b>实现注意（写码时会处理）：</b>
+<ul>
+  <li>彻底删除：在扩展内弹 <code>NSAlert</code> 二次确认，确认后才 <code>FileManager.removeItem</code>，不可恢复。</li>
+  <li>用指定 App 打开：<code>NSWorkspace</code> 按 bundleId 打开选中文件；设置页增删 App 写回 JSON。</li>
+  <li>压缩/解压：调用系统 <code>zip</code> / <code>ditto -x</code>（均原生，无需装包）；7z 仅在有 <code>p7zip</code> 时显式提供。</li>
+  <li>发送到桌面：对选中项创建 <code>alias</code>（替身）到 <code>~/Desktop</code>。</li>
+  <li>PPTX 模板：用 python-pptx 生成 <code>Empty.pptx</code>，放入扩展 <code>Resources/Templates/</code>（构建脚本已通配复制）。</li>
+  <li>以上新增项均受设置页开关控制，关闭则不显示在右键菜单。</li>
+</ul>
+</div>
+</body>
+</html>

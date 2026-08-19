@@ -13,6 +13,37 @@ private final class FirstMouseHostingView<Content: View>: NSHostingView<Content>
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 
+/// 所有悬浮窗共用同一套屏幕边界计算。外接屏拔插、不同缩放比例或较小
+/// 可用区域下，先缩小窗口再修正原点，避免窗口尺寸本身大于屏幕而永久被裁切。
+enum FloatingPanelGeometry {
+    static func fittedSize(
+        _ requested: NSSize,
+        in visibleFrame: NSRect,
+        margin: CGFloat = 8
+    ) -> NSSize {
+        NSSize(
+            width: min(requested.width, max(1, visibleFrame.width - margin * 2)),
+            height: min(requested.height, max(1, visibleFrame.height - margin * 2))
+        )
+    }
+
+    static func constrained(
+        _ frame: NSRect,
+        to visibleFrame: NSRect,
+        margin: CGFloat = 8
+    ) -> NSRect {
+        var result = frame
+        result.size = fittedSize(result.size, in: visibleFrame, margin: margin)
+        let minX = visibleFrame.minX + margin
+        let minY = visibleFrame.minY + margin
+        let maxX = visibleFrame.maxX - result.width - margin
+        let maxY = visibleFrame.maxY - result.height - margin
+        result.origin.x = min(max(result.minX, minX), maxX)
+        result.origin.y = min(max(result.minY, minY), maxY)
+        return result
+    }
+}
+
 @MainActor
 final class WorkspaceFloatingPanelController: NSObject, ObservableObject {
     @Published private(set) var isExpanded = false
@@ -20,6 +51,7 @@ final class WorkspaceFloatingPanelController: NSObject, ObservableObject {
     private weak var state: AppState?
     private let panel: NSPanel
     private var hasInitialPosition = false
+    private var screenObserver: NSObjectProtocol?
 
     init(state: AppState) {
         self.state = state
@@ -51,12 +83,23 @@ final class WorkspaceFloatingPanelController: NSObject, ObservableObject {
             .environmentObject(state)
             .preferredColorScheme(state.preferences.appearance.colorScheme)
         )
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.constrainToCurrentScreen()
+            }
+        }
     }
 
     func show() {
         if !hasInitialPosition {
             positionInitially()
             hasInitialPosition = true
+        } else {
+            constrainToCurrentScreen()
         }
         panel.orderFrontRegardless()
     }
@@ -66,6 +109,10 @@ final class WorkspaceFloatingPanelController: NSObject, ObservableObject {
     }
 
     func dispose() {
+        if let screenObserver {
+            NotificationCenter.default.removeObserver(screenObserver)
+            self.screenObserver = nil
+        }
         panel.orderOut(nil)
         panel.contentView = nil
     }
@@ -113,11 +160,11 @@ final class WorkspaceFloatingPanelController: NSObject, ObservableObject {
         CATransaction.setDisableActions(true)
         let newX = start.origin.x + translation.width
         let newY = start.origin.y - translation.height
-        let clamped = clamped(
+        let constrainedFrame = FloatingPanelGeometry.constrained(
             NSRect(origin: NSPoint(x: newX, y: newY), size: start.size),
             to: screen.visibleFrame
         )
-        panel.setFrameOrigin(clamped.origin)
+        panel.setFrameOrigin(constrainedFrame.origin)
         CATransaction.commit()
     }
 
@@ -130,7 +177,10 @@ final class WorkspaceFloatingPanelController: NSObject, ObservableObject {
         }
         // 最终位置做一次边界修正
         guard let screen = panel.screen ?? NSScreen.main else { return }
-        panel.setFrame(clamped(panel.frame, to: screen.visibleFrame), display: false)
+        panel.setFrame(
+            FloatingPanelGeometry.constrained(panel.frame, to: screen.visibleFrame),
+            display: false
+        )
     }
 
     /// 原生拖拽开始（NativeDragView 调用）——禁阴影提升帧率
@@ -147,7 +197,10 @@ final class WorkspaceFloatingPanelController: NSObject, ObservableObject {
             hadShadowBeforeDrag = false
         }
         guard let screen = panel.screen ?? NSScreen.main else { return }
-        panel.setFrame(clamped(panel.frame, to: screen.visibleFrame), display: false)
+        panel.setFrame(
+            FloatingPanelGeometry.constrained(panel.frame, to: screen.visibleFrame),
+            display: false
+        )
     }
 
     func applyAppearance(_ appearance: AppAppearance) {
@@ -170,33 +223,35 @@ final class WorkspaceFloatingPanelController: NSObject, ObservableObject {
     private func positionInitially() {
         guard let screen = panel.screen ?? NSScreen.main else { return }
         let visible = screen.visibleFrame
-        let size = panelSize
+        let size = FloatingPanelGeometry.fittedSize(panelSize, in: visible)
         let frame = NSRect(
             x: visible.maxX - size.width - 14,
             y: visible.midY - size.height / 2,
             width: size.width,
             height: size.height
         )
-        panel.setFrame(clamped(frame, to: visible), display: true)
+        panel.setFrame(FloatingPanelGeometry.constrained(frame, to: visible), display: true)
     }
 
     private func updateFrame(anchoredTo oldFrame: NSRect, animated: Bool) {
         guard let screen = panel.screen ?? NSScreen.main else { return }
-        let size = panelSize
+        let visible = screen.visibleFrame
+        let size = FloatingPanelGeometry.fittedSize(panelSize, in: visible)
         let frame = NSRect(
             x: oldFrame.maxX - size.width,
             y: oldFrame.maxY - size.height,
             width: size.width,
             height: size.height
         )
-        panel.setFrame(clamped(frame, to: screen.visibleFrame), display: true, animate: animated)
+        panel.setFrame(FloatingPanelGeometry.constrained(frame, to: visible), display: true, animate: animated)
     }
 
-    private func clamped(_ frame: NSRect, to visible: NSRect) -> NSRect {
-        var result = frame
-        result.origin.x = min(max(result.minX, visible.minX + 8), visible.maxX - result.width - 8)
-        result.origin.y = min(max(result.minY, visible.minY + 8), visible.maxY - result.height - 8)
-        return result
+    private func constrainToCurrentScreen() {
+        guard let visible = (panel.screen ?? NSScreen.main)?.visibleFrame else { return }
+        panel.setFrame(
+            FloatingPanelGeometry.constrained(panel.frame, to: visible),
+            display: false
+        )
     }
 }
 
@@ -210,6 +265,7 @@ final class DetachedWorkspacePanelController: NSObject, ObservableObject, NSWind
     private var hasInitialPosition = false
     private var hadShadowBeforeDrag = false
     private var mouseUpMonitor: Any?
+    private var screenObserver: NSObjectProtocol?
 
     private var positionKey: String {
         "foldesk.detachedWorkspacePanel.\(workspaceID.uuidString).origin"
@@ -254,12 +310,23 @@ final class DetachedWorkspacePanelController: NSObject, ObservableObject, NSWind
             }
             return event
         }
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.constrainAndSavePosition()
+            }
+        }
     }
 
     func show(near screenPoint: NSPoint? = nil) {
         if !hasInitialPosition {
             positionInitially(near: screenPoint)
             hasInitialPosition = true
+        } else {
+            constrainAndSavePosition()
         }
         panel.orderFrontRegardless()
     }
@@ -268,6 +335,10 @@ final class DetachedWorkspacePanelController: NSObject, ObservableObject, NSWind
         if let mouseUpMonitor {
             NSEvent.removeMonitor(mouseUpMonitor)
             self.mouseUpMonitor = nil
+        }
+        if let screenObserver {
+            NotificationCenter.default.removeObserver(screenObserver)
+            self.screenObserver = nil
         }
         panel.delegate = nil
         panel.orderOut(nil)
@@ -334,32 +405,35 @@ final class DetachedWorkspacePanelController: NSObject, ObservableObject, NSWind
             NSScreen.screens.first(where: { $0.frame.contains(point) })
         } ?? NSScreen.main
         guard let visible = screen?.visibleFrame else { return }
-        let size = panelSize
+        let size = FloatingPanelGeometry.fittedSize(panelSize, in: visible)
         let origin: NSPoint
         if let point {
             origin = NSPoint(x: point.x - size.width / 2, y: point.y - 26)
         } else {
             origin = NSPoint(x: visible.midX - size.width / 2, y: visible.midY - size.height / 2)
         }
-        panel.setFrame(clamped(NSRect(origin: origin, size: size), to: visible), display: true)
+        panel.setFrame(
+            FloatingPanelGeometry.constrained(NSRect(origin: origin, size: size), to: visible),
+            display: true
+        )
     }
 
     private func updateFrame(anchoredTo oldFrame: NSRect, animated: Bool) {
         guard let visible = (panel.screen ?? NSScreen.main)?.visibleFrame else { return }
-        let size = panelSize
+        let size = FloatingPanelGeometry.fittedSize(panelSize, in: visible)
         let frame = NSRect(
             x: oldFrame.minX,
             y: oldFrame.maxY - size.height,
             width: size.width,
             height: size.height
         )
-        panel.setFrame(clamped(frame, to: visible), display: true, animate: animated)
+        panel.setFrame(FloatingPanelGeometry.constrained(frame, to: visible), display: true, animate: animated)
         savePosition()
     }
 
     private func constrainAndSavePosition() {
         guard let visible = (panel.screen ?? NSScreen.main)?.visibleFrame else { return }
-        panel.setFrame(clamped(panel.frame, to: visible), display: false)
+        panel.setFrame(FloatingPanelGeometry.constrained(panel.frame, to: visible), display: false)
         savePosition()
     }
 
@@ -367,12 +441,6 @@ final class DetachedWorkspacePanelController: NSObject, ObservableObject, NSWind
         UserDefaults.standard.set(NSStringFromPoint(panel.frame.origin), forKey: positionKey)
     }
 
-    private func clamped(_ frame: NSRect, to visible: NSRect) -> NSRect {
-        var result = frame
-        result.origin.x = min(max(result.minX, visible.minX + 8), visible.maxX - result.width - 8)
-        result.origin.y = min(max(result.minY, visible.minY + 8), visible.maxY - result.height - 8)
-        return result
-    }
 }
 
 private struct DetachedWorkspacePanelView: View {
@@ -392,6 +460,7 @@ private struct DetachedWorkspacePanelView: View {
                 collapsedContent
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: controller.isExpanded ? 16 : 14))
         .overlay(

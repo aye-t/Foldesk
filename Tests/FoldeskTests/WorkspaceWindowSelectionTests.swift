@@ -3,49 +3,45 @@ import CoreGraphics
 import XCTest
 
 final class WorkspaceWindowSelectionTests: XCTestCase {
-    func testPrefersFocusDockMainWindowOverEarlierUntitledPanels() throws {
+    func testPrefersFoldeskMainWindowOverEarlierUntitledPanels() throws {
         let windows = [
             window(index: 0, title: "未命名窗口", width: 248, height: 295),
             window(index: 1, title: "未命名窗口", width: 300, height: 88),
-            window(index: 2, title: "FocusDock", width: 1_120, height: 795)
+            window(index: 2, title: "Foldesk", width: 1_120, height: 795)
         ]
 
         let selected = try XCTUnwrap(
-            WorkspaceWindowSelection.preferredPrimaryWindow(in: windows, appName: "FocusDock")
+            WorkspaceWindowSelection.preferredPrimaryWindow(in: windows, appName: "Foldesk")
         )
 
         XCTAssertEqual(selected.index, 2)
-        XCTAssertEqual(selected.title, "FocusDock")
+        XCTAssertEqual(selected.title, "Foldesk")
     }
 
     func testSelectionDoesNotDependOnAXWindowOrder() throws {
-        let main = window(index: 0, title: "FocusDock", width: 1_120, height: 795)
+        let main = window(index: 0, title: "Foldesk", width: 1_120, height: 795)
         let panel = window(index: 1, title: "未命名窗口", width: 288, height: 477)
 
         for candidates in [[main, panel], [panel, main]] {
             let selected = try XCTUnwrap(
-                WorkspaceWindowSelection.preferredPrimaryWindow(in: candidates, appName: "FocusDock")
+                WorkspaceWindowSelection.preferredPrimaryWindow(in: candidates, appName: "Foldesk")
             )
-            XCTAssertEqual(selected.title, "FocusDock")
+            XCTAssertEqual(selected.title, "Foldesk")
         }
     }
 
-    @MainActor
-    func testLiveFocusDockSelectsNamedMainWindowWhenAvailable() throws {
-        let manager = WindowManager()
-        guard let app = manager.scanApplications().first(where: {
-            $0.bundleIdentifier == "com.focusdock.mac"
-        }) else {
-            throw XCTSkip("FocusDock is not running")
-        }
-
+    func testLargeNamedWindowBeatsSmallNamedUtilityWindow() throws {
         let selected = try XCTUnwrap(
-            WorkspaceWindowSelection.preferredPrimaryWindow(in: app.windows, appName: app.name)
+            WorkspaceWindowSelection.preferredPrimaryWindow(
+                in: [
+                    window(index: 0, title: "Foldesk 设置", width: 420, height: 260),
+                    window(index: 1, title: "Foldesk", width: 1_180, height: 760)
+                ],
+                appName: "Foldesk"
+            )
         )
 
-        XCTAssertEqual(selected.title, "FocusDock")
-        XCTAssertGreaterThan(selected.frame.width, 480)
-        XCTAssertGreaterThan(selected.frame.height, 320)
+        XCTAssertEqual(selected.index, 1)
     }
 
     private func window(index: Int, title: String, width: CGFloat, height: CGFloat) -> WindowItem {
@@ -53,7 +49,7 @@ final class WorkspaceWindowSelectionTests: XCTestCase {
             id: "window-\(index)",
             pid: 123,
             cgWindowID: nil,
-            appName: "FocusDock",
+            appName: "Foldesk",
             title: title,
             index: index,
             isMinimized: false,

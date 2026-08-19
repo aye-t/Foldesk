@@ -38,3 +38,28 @@ open dist/Foldesk.app
 - 分屏布局：6 种预设与自定义拆分、具体窗口拖放/交换、比例和间距调整、真实窗口预览/恢复、撤销、模板持久化与一键应用
 - 应用/窗口分层批量操作和安全结束工作；所有批量退出路径始终保护 Foldesk 自身
 - 权限引导、排除应用与风险确认
+
+## Finder 右键菜单扩展
+
+Foldesk 内置一个 Finder Sync 扩展，可在 Finder / 桌面右键菜单中提供：
+
+- 新建文件：Microsoft Excel 工作簿 / Word 文档 / 文本文档 / Markdown / 空文件
+- 复制到 / 移动到：一键把选中的文件送进收藏目录
+- 常用目录：打开收藏目录
+- 拷贝路径、添加到常用目录
+- 显示 / 隐藏所有文件
+- 进入终端（在当前目录打开 Terminal）
+
+配置入口：Foldesk 主界面左侧「右键菜单」。配置保存在
+`~/Library/Application Support/Foldesk/findersync.json`，由主程序和扩展共享读取。
+
+### 启用步骤
+
+1. 构建并运行：`chmod +x scripts/build-app.sh && ./scripts/build-app.sh && open dist/Foldesk.app`
+2. 打开 Foldesk → 左侧「右键菜单」，确认已开启。
+3. 首次使用需授权扩展：
+   - 打开 **系统设置 → 隐私与安全性 → 扩展 → 访达（Finder）**，勾选 **Foldesk 右键菜单**。
+   - 或在「右键菜单」页点击「在系统设置中启用…」按钮直接跳转。
+4. 在 Finder 窗口或桌面右键即可看到 Foldesk 的菜单项。
+
+> 扩展与主程序均未沙盒化（ad-hoc 签名），因此可以读写任意目录。Excel / Word 模板为内置空白文件，无需安装 Office 即可生成可正常打开的文档。

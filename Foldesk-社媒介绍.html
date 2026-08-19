@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Foldesk · 把杂乱的桌面，收成你想要的样子</title>
+<style>
+  :root{
+    --blue:#0A66F2;
+    --blue-soft:#0A66F21a;
+    --ink:#1d1d1f;
+    --ink-2:#3a3a3c;
+    --ink-3:#6e6e73;
+    --line:#e6e6ea;
+    --bg:#ffffff;
+    --bg-soft:#f6f7f9;
+    --green:#1f9d55;
+    --amber:#b7781f;
+    --red:#d23b3b;
+    --radius:18px;
+    --shadow:0 10px 30px rgba(0,0,0,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* 顶部进度 + 导航 */
+  #progress{position:fixed;top:0;left:0;height:4px;width:0;background:var(--blue);z-index:50;transition:width .15s}
+  nav{
+    position:sticky;top:0;z-index:40;background:rgba(255,255,255,.82);
+    backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid var(--line);
+    display:flex;gap:6px;flex-wrap:wrap;padding:10px 22px;align-items:center;
+  }
+  nav .brand{font-weight:800;letter-spacing:.3px;margin-right:10px;color:var(--blue);font-size:17px;display:flex;align-items:center;gap:8px}
+  nav .brand .dot{width:14px;height:14px;border-radius:5px;background:var(--blue);box-shadow:0 0 0 4px var(--blue-soft)}
+  nav a{
+    text-decoration:none;color:var(--ink-3);font-size:13.5px;font-weight:600;
+    padding:6px 12px;border-radius:999px;transition:.18s;white-space:nowrap;
+  }
+  nav a:hover{background:var(--bg-soft);color:var(--ink)}
+  nav a.active{background:var(--blue);color:#fff}
+  /* 区块 */
+  section{padding:74px 24px;max-width:1040px;margin:0 auto;scroll-margin-top:64px}
+  .hero{
+    text-align:center;padding:90px 24px 60px;
+    background:radial-gradient(1200px 400px at 50% -10%,var(--blue-soft),transparent);
+  }
+  .hero .kicker{
+    display:inline-block;font-size:13px;font-weight:700;color:var(--blue);
+    background:var(--blue-soft);padding:6px 14px;border-radius:999px;margin-bottom:22px;letter-spacing:.4px;
+  }
+  .hero h1{font-size:clamp(34px,6vw,60px);font-weight:800;letter-spacing:-1px;line-height:1.12}
+  .hero h1 .hl{color:var(--blue)}
+  .hero p.sub{font-size:clamp(16px,2.4vw,21px);color:var(--ink-3);margin-top:20px;max-width:680px;margin-left:auto;margin-right:auto}
+  .hero .who{margin-top:26px;font-size:14px;color:var(--ink-3)}
+  .hero .who b{color:var(--ink)}
+  h2.title{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+  .title-sub{color:var(--ink-3);font-size:16px;margin-bottom:34px}
+  .lead{font-size:18px;color:var(--ink-2);max-width:760px}
+  /* 痛点卡片 */
+  .pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:30px}
+  .pain{background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+  .pain .ico{font-size:26px}
+  .pain h3{font-size:17px;margin:10px 0 6px}
+  .pain p{font-size:14.5px;color:var(--ink-3)}
+  /* 功能卡 */
+  .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:30px}
+  .feat{border:1px solid var(--line);border-radius:var(--radius);padding:22px;background:#fff;box-shadow:var(--shadow);transition:.2s}
+  .feat:hover{transform:translateY(-3px)}
+  .feat .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .feat .ico{width:44px;height:44px;border-radius:12px;background:var(--blue-soft);display:flex;align-items:center;justify-content:center;font-size:22px}
+  .badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .badge.ok{background:#e7f6ee;color:var(--green)}
+  .badge.soon{background:#fdf2e2;color:var(--amber)}
+  .feat h3{font-size:18px;margin:14px 0 8px}
+  .feat p{font-size:14.5px;color:var(--ink-3)}
+  .feat .note{margin-top:10px;font-size:12.5px;color:var(--ink-3);border-top:1px dashed var(--line);padding-top:10px}
+  /* 镜头脚本 callout */
+  .script{
+    margin-top:18px;border-left:4px solid var(--blue);background:#f4f8ff;
+    border-radius:0 12px 12px 0;padding:14px 18px;font-size:14px;color:var(--ink-2);
+  }
+  .script .tag{display:inline-block;font-weight:800;color:var(--blue);margin-right:6px}
+  .script .cam{font-weight:700;color:var(--blue)}
+  /* 演示时间线 */
+  .steps{counter-reset:step;margin-top:30px;display:flex;flex-direction:column;gap:14px}
+  .step{display:flex;gap:16px;align-items:flex-start;background:var(--bg-soft);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .step .num{counter-increment:step;flex:0 0 40px;width:40px;height:40px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:17px}
+  .step .num::before{content:counter(step)}
+  .step .body h3{font-size:17px;margin-bottom:4px}
+  .step .body p{font-size:14.5px;color:var(--ink-3)}
+  .step .time{margin-left:auto;flex:0 0 auto;font-size:12.5px;font-weight:700;color:var(--blue);background:var(--blue-soft);padding:4px 10px;border-radius:999px;white-space:nowrap}
+  /* 对比表 */
+  table{width:100%;border-collapse:collapse;margin-top:24px;font-size:14.5px}
+  th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
+  th{background:var(--bg-soft);font-weight:700;color:var(--ink-2)}
+  td .y{color:var(--green);font-weight:700}
+  td .n{color:var(--ink-3)}
+  /* 提示条 */
+  .callout{margin-top:24px;background:#fff7ed;border:1px solid #fde2bf;border-radius:14px;padding:16px 18px;font-size:14.5px;color:#8a4b13}
+  .callout b{color:#7a3d0c}
+  footer{padding:46px 24px 70px;text-align:center;color:var(--ink-3);font-size:13.5px;border-top:1px solid var(--line);margin-top:30px}
+  footer .req{margin-top:10px;font-size:13px}
+  @media (max-width:600px){.step .time{display:none}nav a{padding:6px 9px;font-size:12.5px}}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<nav>
+  <span class="brand"><span class="dot"></span>Foldesk</span>
+  <a href="#idea">制作思路</a>
+  <a href="#what">产品介绍</a>
+  <a href="#features">核心功能</a>
+  <a href="#honest">真实 vs 规划</a>
+  <a href="#demo">视频演示脚本</a>
+  <a href="#end">收尾</a>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <span class="kicker">macOS 原生 · 窗口收纳 & 工作区</span>
+  <h1>把杂乱的桌面，<br/><span class="hl">收成你想要的样子</span></h1>
+  <p class="sub">Foldesk 是一个用 SwiftUI 写的 macOS 小工具：一键收起全部窗口、按任务组织工作区、还能在访达右键新建文件。专注当下，离开时桌面干净，回来时一键还原。</p>
+  <p class="who">作者 <b>一也</b> · 从 Windows 迁移到 Mac 后，自己动手补足“右击新建文件”这件小事</p>
+</header>
+
+<!-- 制作思路 -->
+<section id="idea">
+  <h2 class="title">制作思路：为什么要做它</h2>
+  <p class="title-sub">不是炫技，是三个真实的日常痛点</p>
+  <p class="lead">做 Foldesk 的出发点很朴素——Mac 很好，但有两件事一直别扭：<b>桌面窗口一多就乱</b>，以及<b>从 Windows 带来的“右键新建文件”习惯被砍掉了</b>。我不想装臃肿的窗口管理器，也不想为了新建一个 Excel 先打开 Office。于是用 Agent 对话，一步步把它搭出来。</p>
+
+  <div class="pain-grid">
+    <div class="pain"><div class="ico">🪟</div><h3>窗口洪水</h3><p>写东西时开着浏览器、文档、终端、笔记、微信……切走再回来，桌面一片狼藉，找不到刚才在哪儿。</p></div>
+    <div class="pain"><div class="ico">🖱️</div><h3>右键被砍</h3><p>Windows 里右键就能“新建 Excel / Word / 文本”，Mac 没有。每次都为建个空文件先开大软件，很烦。</p></div>
+    <div class="pain"><div class="ico">🔀</div><h3>场景切换</h3><p>“写论文模式”“剪视频模式”“回邮件模式”要的窗口不一样，每次手动开关，重复又易漏。</p></div>
+  </div>
+
+  <div class="script">
+    <span class="tag">🎬 镜头脚本</span>
+    这一段用<b>口播 + 屏幕实拍</b>：先展示一个堆满窗口的混乱桌面（实拍），再说“我受够了，所以做了这个”。
+    <span class="cam">镜头建议</span>：开头 5 秒直接甩一个乱桌面录屏，抓眼球，再切到产品名。
+  </div>
+</section>
+
+<!-- 产品介绍 -->
+<section id="what">
+  <h2 class="title">产品介绍：它到底是什么</h2>
+  <p class="title-sub">一句话：macOS 原生窗口收纳 + 工作区 + 访达右键服务</p>
+  <p class="lead">Foldesk 是一个<b>完全本机运行</b>的 macOS 菜单栏工具（SwiftUI 原生，无 Electron、不联网）。它做三件事：</p>
+  <table>
+    <tr><th>能力</th><th>解决什么</th><th>依赖的权限</th></tr>
+    <tr><td>窗口收纳 / 恢复</td><td class="y">收起全部 → 桌面干净；恢复刚才 → 窗口回到原位置尺寸</td><td>辅助功能</td></tr>
+    <tr><td>我的工作区</td><td class="y">把“某任务要的窗口”存成模板，一键进入 / 退出</td><td>辅助功能</td></tr>
+    <tr><td>访达右键服务</td><td class="y">右键新建 Excel/Word/PPT/文本/MD、复制路径、压缩解压、彻底删除</td><td>无需特殊权限</td></tr>
+  </table>
+  <div class="callout">
+    <b>隐私说明（真实）：</b>窗口标题、缩略图、历史与工作区配置<b>只在本机处理，不会上传</b>。屏幕录制权限仅用于在本机生成真实窗口缩略图，可不开（不开则无缩略图，其余功能正常）。
+  </div>
+</section>
+
+<!-- 核心功能 -->
+<section id="features">
+  <h2 class="title">核心功能（均为已实现）</h2>
+  <p class="title-sub">下面每一项都能在软件里真实操作，不是概念图</p>
+
+  <div class="feat-grid">
+    <div class="feat">
+      <div class="top"><div class="ico">📥</div><span class="badge ok">已实现</span></div>
+      <h3>一键收起 / 恢复</h3>
+      <p>“收起全部”把所有应用窗口藏起；“恢复刚才”一键还原到收起前的位置与尺寸。最多保留最近 10 次快照。</p>
+      <div class="note">快捷键：收起 ⌥D · 恢复 ⌥R · 刷新 ⌘R</div>
+    </div>
+
+    <div class="feat">
+      <div class="top"><div class="ico">🎛️</div><span class="badge ok">已实现</span></div>
+      <h3>窗口总控台</h3>
+      <p>搜索、聚焦、隐藏、最小化、放大/全屏、关闭窗口、正常退出应用，全在一个列表里完成。</p>
+      <div class="note">对 Word/Excel/PS 等会提示“可能未保存”，避免误关。</div>
+    </div>
+
+    <div class="feat">
+      <div class="top"><div class="ico">🗂️</div><span class="badge ok">已实现</span></div>
+      <h3>我的工作区</h3>
+      <p>按需选择“这个任务要的应用 + 具体窗口”存成模板；进入时自动最小化无关窗口。最多同时开 3 个工作区，可并行、可独立悬浮窗。</p>
+      <div class="note">成员默认按需打开，可为个别应用设“自动打开”。</div>
+    </div>
+
+    <div class="feat">
+      <div class="top"><div class="ico">▦</div><span class="badge ok">已实现</span></div>
+      <h3>分屏布局</h3>
+      <p>6 种预设 + 自定义拆分，把应用拖进槽位即可自动排列（左右 / 上下 / 左一右二 / 四宫格等）。支持比例、间距、预览、撤销、模板持久化。</p>
+      <div class="note">依赖“辅助功能”权限才能移动窗口。</div>
+    </div>
+
+    <div class="feat">
+      <div class="top"><div class="ico">📝</div><span class="badge ok">已实现</span></div>
+      <h3>访达右键服务</h3>
+      <p>在访达右键 → 服务，可新建 Excel / Word / PPT / 文本 / Markdown（内置空白模板，无需装 Office）、复制路径 / 文件名、压缩为 zip、解压、彻底删除。</p>
+      <div class="note">基于 macOS「服务」机制，无需公证即可被系统发现。</div>
+    </div>
+
+    <div class="feat">
+      <div class="top"><div class="ico">🛡️</div><span class="badge ok">已实现</span></div>
+      <h3>批量 & 安全结束</h3>
+      <p>应用 / 窗口分层批量操作；「安全结束工作」逐个发送正常退出请求，未保存内容由原应用提示。<b>Foldesk 自身始终保留运行</b>。</p>
+      <div class="note">可设置“排除应用”避免误收起特定软件。</div>
+    </div>
+  </div>
+
+  <div class="script">
+    <span class="tag">🎬 镜头脚本</span>
+    功能页用<b>边讲边点</b>：每个卡片对应一次真实点击。先讲“收起/恢复”（最抓人），再讲“右键新建文件”（最有记忆点），分屏最后讲（进阶）。
+    <span class="cam">镜头建议</span>：讲右键服务时，直接切到访达录一段“右键→服务→新建 Markdown”，比任何截图都强。
+  </div>
+</section>
+
+<!-- 真实 vs 规划 -->
+<section id="honest">
+  <h2 class="title">真实能力 vs 规划中</h2>
+  <p class="title-sub">诚实交代：哪些是现在就能用，哪些还在路上</p>
+  <table>
+    <tr><th>功能</th><th>状态</th><th>说明</th></tr>
+    <tr><td>收起 / 恢复 / 工作区 / 分屏 / 右键服务 / 批量退出</td><td class="y">✅ 现在可用</td><td>本机实测通过</td></tr>
+    <tr><td>窗口缩略图</td><td class="y">✅ 现在可用</td><td>需授予“屏幕录制”权限（仅本机生成）</td></tr>
+    <tr><td>常用目录（复制到 / 移动到）</td><td class="n">🔜 规划中</td><td>设置页可先添加目录，但对应服务尚未接入</td></tr>
+    <tr><td>用指定 App 打开</td><td class="n">🔜 规划中</td><td>设置页可先添加 App，对应服务尚未接入</td></tr>
+    <tr><td>Finder Sync 扩展</td><td class="n">🔜 已弃用</td><td>早期方案，因自签环境限制改用「服务」机制，更稳定</td></tr>
+  </table>
+  <div class="callout">
+    <b>给观众的实话：</b>设置里有“常用目录 / 用指定 App 打开”的配置入口，目前是<b>预留位</b>，点了不会立刻生效——视频里可以提一句“下个版本接上”，别演示成已能用，否则翻车。
+  </div>
+</section>
+
+<!-- 视频演示脚本 -->
+<section id="demo">
+  <h2 class="title">视频演示脚本（实操流）</h2>
+  <p class="title-sub">按顺序录，总时长约 8–10 分钟；每段都标了镜头动作</p>
+  <div class="steps">
+    <div class="step"><div class="num"></div><div class="body"><h3>开场：混乱桌面</h3><p>实拍一堆窗口的桌面，口播痛点（对应“制作思路”页）。不碰软件。</p></div><span class="time">0:00–0:40</span></div>
+    <div class="step"><div class="num"></div><div class="body"><h3>首次运行 & 授权</h3><p>打开 Foldesk → 系统设置授予「辅助功能」（收起/恢复/分屏必需）+ 可选「屏幕录制」（缩略图）。强调：不授权核心功能不可用。</p></div><span class="time">0:40–1:40</span></div>
+    <div class="step"><div class="num"></div><div class="body"><h3>一键收起 → 恢复</h3><p>点“收起全部”，桌面瞬空；点“恢复刚才”，窗口回到原位。这是全片最爽点，慢动作再来一遍。</p></div><span class="time">1:40–3:00</span></div>
+    <div class="step"><div class="num"></div><div class="body"><h3>访达右键新建文件</h3><p>切到访达，右键文件/空白处 → 服务 → 新建 Markdown / Excel。强调“不用开 Office”。</p></div><span class="time">3:00–4:20</span></div>
+    <div class="step"><div class="num"></div><div class="body"><h3>建一个工作区</h3><p>选几个应用+窗口 → 保存为“剪视频模式”→ 退出再进入，演示无关窗口被自动收起。</p></div><span class="time">4:20–6:00</span></div>
+    <div class="step"><div class="num"></div><div class="body"><h3>分屏布局（进阶）</h3><p>进工作区 → 分屏模板选“左一右二”→ 把应用拖进槽位 → 点“开始分屏”自动排布。</p></div><span class="time">6:00–8:00</span></div>
+    <div class="step"><div class="num"></div><div class="body"><h3>收尾 & 诚实交代</h3><p>“安全结束工作”正常退出应用；回到“真实 vs 信息”页，说明规划中功能，引导观众关注/留言。</p></div><span class="time">8:00–10:00</span></div>
+  </div>
+  <div class="script">
+    <span class="tag">🎬 总导演提示</span>
+    全程<b>自己机器演示即可</b>（软件本机已构建可跑）。录之前务必先授权“辅助功能”，否则收起/恢复会假成功、分屏不动——这是最容易翻车的点。
+    <span class="cam">镜头建议</span>：关键操作后用“鼠标圈选/放大”突出按钮，观众才看得到点哪儿。
+  </div>
+</section>
+
+<!-- 收尾 -->
+<section id="end">
+  <h2 class="title">收尾：怎么拿到 / 怎么聊</h2>
+  <p class="title-sub">本机演示零门槛；若要发给别人用，需先过公证</p>
+  <p class="lead">现在这版是<b>本机自签 / ad-hoc</b> 构建，自己机器双击就能跑，适合录视频。但如果你想把 app 发给观众下载，必须先做 <b>Apple Developer ID 公证</b>，否则别人机器会被 Gatekeeper 拦下（提示“无法验证开发者”）。</p>
+  <div class="callout">
+    <b>视频里怎么措辞：</b>“工具我先自用，配套视频教你怎么用 Agent 从零搭一个”——既诚实，又把观众引向“自己动手”的 DIY 主题，正好契合你“一也”的分享人设。
+  </div>
+  <p class="lead" style="margin-top:26px">开源思路：核心能力（窗口收纳 / 工作区 / 右键服务）都基于 macOS 原生 Accessibility + NSServices，<b>不需要上架 App Store</b>，本地构建即用。</p>
+</section>
+
+<footer>
+  Foldesk · 作者 一也 · 原生 SwiftUI macOS 工具
+  <div class="req">首次使用需授权：辅助功能（必需）· 屏幕录制（可选，仅本机缩略图）· 所有数据本机处理不上传</div>
+</footer>
+
+<script>
+  // 顶部进度条 + 导航高亮
+  const links=[...document.querySelectorAll('nav a')];
+  const sections=links.map(a=>document.querySelector(a.getAttribute('href')));
+  const prog=document.getElementById('progress');
+  function onScroll(){
+    const h=document.documentElement;
+    const sc=h.scrollTop/(h.scrollHeight-h.clientHeight);
+    prog.style.width=(sc*100)+'%';
+    let cur=sections.length-1;
+    for(let i=0;i<sections.length;i++){
+      if(sections[i].getBoundingClientRect().top<=120) cur=i;
+    }
+    links.forEach((a,i)=>a.classList.toggle('active',i===cur));
+  }
+  document.addEventListener('scroll',onScroll,{passive:true});
+  onScroll();
+</script>
+</body>
+</html>

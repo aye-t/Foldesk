@@ -17,6 +17,7 @@ struct RootView: View {
                     case .workspaces: WorkspacesPage()
                     case .splitLayout: SplitLayoutPage()
                     case .batch: BatchPage()
+                    case .finderMenu: FinderMenuPage()
                     case .settings: SettingsPage()
                     }
                 }

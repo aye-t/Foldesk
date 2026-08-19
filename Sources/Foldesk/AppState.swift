@@ -86,8 +86,14 @@ final class AppState: ObservableObject {
     }
 
     func refreshPermissions() {
-        accessibilityGranted = manager.hasAccessibilityPermission
-        screenRecordingGranted = manager.hasScreenRecordingPermission
+        let hasAccessibility = manager.hasAccessibilityPermission
+        let hasScreenRecording = manager.hasScreenRecordingPermission
+        if accessibilityGranted != hasAccessibility {
+            accessibilityGranted = hasAccessibility
+        }
+        if screenRecordingGranted != hasScreenRecording {
+            screenRecordingGranted = hasScreenRecording
+        }
     }
 
     func requestAccessibilityPermission() {

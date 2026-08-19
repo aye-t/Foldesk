@@ -8,6 +8,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case workspaces = "我的工作区"
     case splitLayout = "分屏布局"
     case batch = "批量操作"
+    case finderMenu = "右键菜单"
     case settings = "设置"
 
     var id: String { rawValue }
@@ -19,6 +20,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .workspaces: "rectangle.3.group"
         case .splitLayout: "rectangle.split.3x1"
         case .batch: "square.stack.3d.up"
+        case .finderMenu: "menubar.rectangle"
         case .settings: "gearshape"
         }
     }

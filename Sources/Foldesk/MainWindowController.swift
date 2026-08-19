@@ -63,8 +63,11 @@ final class MainWindowController: NSObject, NSWindowDelegate {
     }
 }
 
+@MainActor
 final class FoldeskAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 注册为系统服务的提供方，使 Info.plist 中声明的 NSServices 能路由到本类方法。
+        NSApp.servicesProvider = self
         NSApp.setActivationPolicy(.regular)
         DispatchQueue.main.async {
             MainWindowController.shared.show(state: .shared)
@@ -84,5 +87,69 @@ final class FoldeskAppDelegate: NSObject, NSApplicationDelegate {
     ) -> Bool {
         MainWindowController.shared.show(state: .shared)
         return true
+    }
+
+    // MARK: - 右键「服务」(NSServices) 处理
+
+    /// 新建 Excel / Word / PPT / 文本 / Markdown（无选中项时落在当前访达目录）。
+    @objc func foldNewExcel(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        createFileFromFinder(template: "Empty", ext: "xlsx")
+    }
+
+    @objc func foldNewWord(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        createFileFromFinder(template: "Empty", ext: "docx")
+    }
+
+    @objc func foldNewPPT(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        createFileFromFinder(template: "Empty", ext: "pptx")
+    }
+
+    @objc func foldNewText(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        createFileFromFinder(template: nil, ext: "txt")
+    }
+
+    @objc func foldNewMarkdown(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        createFileFromFinder(template: nil, ext: "md")
+    }
+
+    /// 复制路径 / 文件名（需选中文件）。
+    @objc func foldCopyPath(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        FoldeskServices.copyPaths(FoldeskServices.fileURLs(from: pboard))
+    }
+
+    @objc func foldCopyName(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        FoldeskServices.copyNames(FoldeskServices.fileURLs(from: pboard))
+    }
+
+    /// 压缩为 zip / 解压到此处。
+    @objc func foldCompress(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        let urls = FoldeskServices.fileURLs(from: pboard)
+        Task.detached(priority: .userInitiated) {
+            _ = FoldeskServices.compress(urls)
+        }
+    }
+
+    @objc func foldExtract(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        let urls = FoldeskServices.fileURLs(from: pboard)
+        Task.detached(priority: .userInitiated) {
+            _ = FoldeskServices.extract(urls)
+        }
+    }
+
+    /// 彻底删除（弹窗二次确认）。
+    @objc func foldDelete(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        FoldeskServices.permanentDelete(FoldeskServices.fileURLs(from: pboard))
+    }
+
+    private func createFileFromFinder(template: String?, ext: String) {
+        Task.detached(priority: .userInitiated) {
+            let folder = FoldeskServices.currentFinderFolder()
+            _ = FoldeskServices.createFile(
+                template: template,
+                ext: ext,
+                defaultBase: "未命名",
+                in: folder
+            )
+        }
     }
 }
