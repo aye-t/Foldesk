@@ -590,9 +590,16 @@ struct SettingsPage: View {
                         Toggle("保存最近 10 次收起记录", isOn: $state.preferences.saveHistory)
                     }
 
+                    SettingsSectionCard(title: "菜单栏") {
+                        Toggle("在菜单栏常驻 Foldesk 图标", isOn: $state.preferences.keepMenuBar)
+                        Text("关闭后菜单栏图标会立即消失，只能通过 Dock 图标或快捷唤起打开主窗口。建议保持开启。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
                     SettingsSectionCard(title: "安全") {
                         Toggle("高风险操作前确认", isOn: $state.preferences.confirmRiskyActions)
-                        Text("Foldesk 始终优先使用应用的正常退出流程，不默认强制退出。")
+                        Text("开启后，退出他人应用（单个退出 / 批量退出 / 结束工作区并退出）前会弹出确认。Foldesk 始终优先使用应用的正常退出流程，不默认强制退出。")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -641,6 +648,7 @@ struct SettingsPage: View {
             .onChange(of: state.preferences.rememberPosition) { state.savePreferences() }
             .onChange(of: state.preferences.rememberSize) { state.savePreferences() }
             .onChange(of: state.preferences.confirmRiskyActions) { state.savePreferences() }
+            .onChange(of: state.preferences.keepMenuBar) { state.savePreferences() }
             .onChange(of: state.preferences.saveHistory) { state.savePreferences() }
             .onChange(of: state.preferences.excludedBundleIDs) { state.savePreferences() }
         }

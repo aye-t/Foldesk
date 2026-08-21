@@ -104,10 +104,17 @@ final class AppState: ObservableObject {
     }
 
     func requestScreenRecordingPermission() {
+        // CGRequestScreenCaptureAccess() 已授权时返回 true；未授权时弹出系统提示并返回 false。
+        // 旧逻辑写成 `granted && !screenRecordingGranted`，条件几乎永不成立，
+        // 且语义相反（未授权才提示“已开启”）。此处按真实状态分支。
         let granted = manager.requestScreenRecordingPermission()
         refreshPermissions()
-        if granted && !screenRecordingGranted {
-            toast = "屏幕录制已开启，重新启动 Foldesk 后生效"
+        if granted {
+            toast = screenRecordingGranted
+                ? "屏幕录制权限已就绪，窗口预览可用"
+                : "屏幕录制已授权，重新启动 Foldesk 后预览生效"
+        } else {
+            toast = "请在系统设置 → 隐私与安全性 → 屏幕录制中勾选 Foldesk，然后重启应用"
         }
     }
 
@@ -282,6 +289,15 @@ final class AppState: ObservableObject {
     }
 
     private func foldAll(ensureDesktopIsClear: Bool) {
+        // 0. 权限前置校验。「最小化」完全依赖辅助功能（AX），无权限时 minimizeAll
+        // 会静默返回、桌面毫无变化，却仍会弹“已收起 N 个窗口”——必须先拦住。
+        // 「隐藏」走 NSRunningApplication.hide()，不需要 AX，可以放行但要提示恢复受限。
+        if !accessibilityGranted && preferences.foldMode == .minimize {
+            toast = "无法收起：「最小化」模式需要辅助功能权限"
+            manageAccessibilityPermission()
+            return
+        }
+
         // 1. 先按排除列表筛出真正会被折叠的应用
         let foldableApps = applications.filter { app in
             guard let bid = app.bundleIdentifier else { return true }
@@ -329,11 +345,16 @@ final class AppState: ObservableObject {
 
         // 4. 浮层只在确实收起了东西时弹；有排除时附带括号说明
         showRecoveryOverlay = preferences.showRecoveryOverlay && !states.isEmpty
+        var message = "已收起 \(states.count) 个窗口"
         if excludedWindowCount > 0 {
-            toast = "已收起 \(states.count) 个窗口（另有 \(excludedWindowCount) 个被排除）"
-        } else {
-            toast = "已收起 \(states.count) 个窗口"
+            message += "（另有 \(excludedWindowCount) 个被排除）"
         }
+        // 无辅助功能权限时「隐藏」仍生效，但之后无法还原窗口位置/取消最小化，
+        // 必须在此如实告知，避免用户以为可以一键恢复。
+        if !accessibilityGranted {
+            message += "；未开启辅助功能权限，稍后无法还原窗口位置"
+        }
+        toast = message
         if ensureDesktopIsClear {
             // NSRunningApplication.hide() 对部分 Electron / 自定义窗口应用可能“返回成功”
             // 但窗口仍留在桌面。等隐藏动画结束后复查，只最小化仍在屏幕上的窗口。
@@ -363,13 +384,36 @@ final class AppState: ObservableObject {
     }
 
     func restore(_ record: FoldRecord) {
+        // ① 权限前置校验——还原位置/大小/取消最小化全部依赖辅助功能。
+        // 没有权限时不能弹“正在恢复”，否则窗口回不了位、观感像坏掉。
+        guard accessibilityGranted else {
+            toast = "无法恢复：请先在系统设置中开启辅助功能权限"
+            manageAccessibilityPermission()
+            return
+        }
+
         refresh()
-        manager.restore(record.windows, applications: applications, preferences: preferences)
+        let restored = manager.restore(
+            record.windows,
+            applications: applications,
+            preferences: preferences
+        )
+
+        // ② 基于真实还原数量给反馈，不再假定全部成功。
+        let total = record.windows.count
+        if restored == 0 {
+            toast = "恢复失败：相关应用可能已退出，或窗口不支持还原"
+            showRecoveryOverlay = false
+            return
+        }
+
         if let index = records.firstIndex(where: { $0.id == record.id }) {
             records[index].restored = true
         }
         showRecoveryOverlay = false
-        toast = "正在恢复 \(record.windows.count) 个窗口"
+        toast = restored == total
+            ? "已恢复 \(restored) 个窗口 ✓"
+            : "已恢复 \(restored)/\(total) 个窗口，其余应用可能已退出"
         save()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self.refresh() }
     }
@@ -1143,6 +1187,16 @@ final class AppState: ObservableObject {
             !sharedPIDs.contains($0.pid)
         }
         if quitApplications {
+            // 结束工作区时退出应用同属高风险操作，走统一确认闸门。
+            if !exclusiveMembers.isEmpty,
+               !confirmRiskyActionIfNeeded(
+                   title: "结束「\(workspace.name)」并退出 \(exclusiveMembers.count) 个应用？",
+                   message: "Foldesk 会发送正常退出请求（等同 ⌘Q），不会强制杀进程。被其他工作区共享的应用会保留。\n\n将退出：\(exclusiveMembers.map(\.name).joined(separator: "、"))",
+                   confirmTitle: "结束并退出"
+               ) {
+                toast = "已取消结束工作区"
+                return
+            }
             exclusiveMembers.forEach { _ = manager.quit($0) }
             toast = "已退出“\(workspace.name)” · 保留 \(sharedPIDs.count) 个共享应用"
         } else {
@@ -1430,6 +1484,20 @@ final class AppState: ObservableObject {
             return
         }
 
+        // 退出他人应用可能丢失未保存内容，属于高风险操作。
+        // 这里是所有退出入口（结束工作 / 批量退出 / 单个退出）的唯一汇聚点，
+        // 在此接入「高风险操作前确认」偏好，该开关此前从未被读取。
+        guard confirmRiskyActionIfNeeded(
+            title: safeTargets.count == 1
+                ? "要退出「\(safeTargets[0].name)」吗？"
+                : "要退出这 \(safeTargets.count) 个应用吗？",
+            message: "Foldesk 会发送正常退出请求（等同 ⌘Q），不会强制杀进程。若有未保存内容，应用会自行弹出保存提示。\n\n涉及应用：\(safeTargets.map(\.name).joined(separator: "、"))",
+            confirmTitle: "退出应用"
+        ) else {
+            toast = "已取消退出"
+            return
+        }
+
         let rejected = safeTargets.filter { manager.quit($0) == .failed }
         if rejected.isEmpty {
             toast = "已发送 \(safeTargets.count) 个正常退出请求，Foldesk 保持运行"
@@ -1450,6 +1518,29 @@ final class AppState: ObservableObject {
             }
             self.refresh()
         }
+    }
+
+    /// 高风险操作的统一确认闸门。
+    /// 当 `preferences.confirmRiskyActions` 关闭时直接放行（返回 true），
+    /// 开启时弹出模态确认，由用户决定是否继续。
+    /// - Returns: 是否应继续执行该操作。
+    @discardableResult
+    func confirmRiskyActionIfNeeded(
+        title: String,
+        message: String,
+        confirmTitle: String
+    ) -> Bool {
+        guard preferences.confirmRiskyActions else { return true }
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: confirmTitle)
+        alert.addButton(withTitle: "取消")
+        // 让「取消」成为键盘 Esc 的默认响应，避免误触回车直接执行。
+        alert.buttons.last?.keyEquivalent = "\u{1b}"
+        return alert.runModal() == .alertFirstButtonReturn
     }
 
     func savePreferences() {

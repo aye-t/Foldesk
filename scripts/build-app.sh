@@ -29,15 +29,12 @@ else
     SIGN_IDENTITY="-"
 fi
 
-# --- Finder Sync 扩展（.appex） ---
-APPEX_DIR="$CONTENTS_DIR/PlugIns/FoldeskFinderSync.appex"
-rm -rf "$APPEX_DIR"
-mkdir -p "$APPEX_DIR/Contents/MacOS" "$APPEX_DIR/Contents/Resources/Templates"
-cp ".build/release/FoldeskFinderSync" "$APPEX_DIR/Contents/MacOS/FoldeskFinderSync"
-cp "Sources/FoldeskFinderSync/Info.plist" "$APPEX_DIR/Contents/Info.plist"
-cp Sources/FoldeskFinderSync/Resources/Templates/* "$APPEX_DIR/Contents/Resources/Templates/"
-# 先单独签名扩展（其 identifier 为 com.foldesk.mac.FinderSync，需自有签名）
-codesign --force --sign "$SIGN_IDENTITY" "$APPEX_DIR"
+# --- Finder Sync 扩展：**不再打包** ---
+# Finder Sync 扩展（.appex）必须用 Developer ID 签名并通过公证才能被系统加载，
+# 自签 / ad-hoc 环境下 pluginkit 会拒绝注册，嵌进去只会让用户在
+# 「系统设置 → 扩展 → 访达」里看到一个永远勾不上的条目。
+# 实际生效的右键能力走 NSServices（见 Resources/Info.plist 的 NSServices 数组），
+# 由主程序自身提供，不依赖扩展。源码保留在 Sources/FoldeskFinderSync/ 备将来使用。
 
 if [[ -d "$ICONSET_DIR" ]]; then
     rm -rf "$ICONSET_DIR"
@@ -58,14 +55,18 @@ iconutil -c icns "$ICONSET_DIR" -o "$CONTENTS_DIR/Resources/FoldeskIcon.icns"
 # Keep a stable designated requirement for local development builds. Without
 # this, ad-hoc signing defaults to the binary's changing CDHash and macOS treats
 # every rebuild as a different app in Accessibility privacy settings.
-# 注意：不要使用 --deep。--deep 会把上方仅针对主 app 的 designated requirement
-# 强加给嵌套的 Finder Sync 扩展（其 identifier 为 com.foldesk.mac.FinderSync），
-# 导致扩展“does not satisfy its designated Requirement”、嵌套校验失败、扩展无法加载。
-# 正确做法：扩展已单独签名，这里只签主 app 自身并封存整个 bundle。
+# 保持固定的 designated requirement，否则每次重新构建都会被
+# 「隐私与安全性 → 辅助功能」当成一个新应用，需要反复重新授权。
 codesign \
     --force \
     --sign "$SIGN_IDENTITY" \
     --requirements '=designated => identifier "com.foldesk.mac"' \
     "$APP_DIR"
+
+# 提醒：本脚本产出的是**本机自用**构建。
+# 若签名身份回退为 ad-hoc（"-"），该 .app 拷到别人机器上会被 Gatekeeper 拦下。
+if [[ "$SIGN_IDENTITY" == "-" ]]; then
+    echo "⚠️  使用 ad-hoc 签名：仅供本机使用，分发给他人需 Developer ID + 公证。" >&2
+fi
 
 echo "$APP_DIR"

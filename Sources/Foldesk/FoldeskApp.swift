@@ -27,7 +27,13 @@ struct FoldeskApp: App {
             }
         }
 
-        MenuBarExtra("Foldesk", systemImage: "rectangle.3.group.fill") {
+        // isInserted 绑定到 keepMenuBar，让「菜单栏常驻」这个偏好真正生效。
+        // 此前该字段只被声明与持久化，从未被任何视图读取（死代码）。
+        MenuBarExtra(
+            "Foldesk",
+            systemImage: "rectangle.3.group.fill",
+            isInserted: $state.preferences.keepMenuBar
+        ) {
             MenuPanel()
                 .environmentObject(state)
                 .preferredColorScheme(state.preferences.appearance.colorScheme)

@@ -245,12 +245,17 @@ final class WindowManager {
         }
     }
 
+    /// 还原窗口，并返回**真实**被还原（成功取到 AX 句柄并写入状态）的窗口数量。
+    /// 调用方必须以该返回值为准生成反馈，不能假定 `states.count` 全部成功——
+    /// 没有辅助功能权限时 `findWindow` 全部返回 nil，此处会返回 0。
+    @discardableResult
     func restore(
         _ states: [SavedWindowState],
         applications: [RunningAppItem],
         preferences: AppPreferences,
         restoreMinimizedState: Bool = true
-    ) {
+    ) -> Int {
+        var restoredCount = 0
         let grouped = Dictionary(grouping: states, by: \.bundleIdentifier)
         for app in applications {
             guard let states = grouped[app.bundleIdentifier] ?? grouped[nil]?.filter({ $0.appName == app.name }) else { continue }
@@ -273,6 +278,7 @@ final class WindowManager {
                 guard let window = exactMatch ?? positionalFallback ?? singleWindowFallback,
                       let element = findWindow(window) else { continue }
                 usedWindowIDs.insert(window.id)
+                restoredCount += 1
                 setBool(
                     element,
                     attribute: kAXMinimizedAttribute,
@@ -292,6 +298,7 @@ final class WindowManager {
                 }
             }
         }
+        return restoredCount
     }
 
     private func axWindows(pid: pid_t, appName: String, cgWindows: [WindowItem]) -> [WindowItem] {
