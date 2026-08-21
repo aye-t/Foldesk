@@ -157,7 +157,7 @@
     <tr><th>能力</th><th>解决什么</th><th>依赖的权限</th></tr>
     <tr><td>窗口收纳 / 恢复</td><td class="y">收起全部 → 桌面干净；恢复刚才 → 窗口回到原位置尺寸</td><td>辅助功能</td></tr>
     <tr><td>我的工作区</td><td class="y">把“某任务要的窗口”存成模板，一键进入 / 退出</td><td>辅助功能</td></tr>
-    <tr><td>访达右键服务</td><td class="y">右键新建 Excel/Word/PPT/文本/MD、复制路径、压缩解压、彻底删除</td><td>无需特殊权限</td></tr>
+    <tr><td>访达右键服务</td><td class="y">右键新建 Excel/Word/PPT/文本/MD、复制路径、压缩解压、彻底删除、复制到/移动到常用目录、用指定 App 打开</td><td>无需特殊权限</td></tr>
   </table>
   <div class="callout">
     <b>隐私说明（真实）：</b>窗口标题、缩略图、历史与工作区配置<b>只在本机处理，不会上传</b>。屏幕录制权限仅用于在本机生成真实窗口缩略图，可不开（不开则无缩略图，其余功能正常）。
@@ -201,7 +201,7 @@
     <div class="feat">
       <div class="top"><div class="ico">📝</div><span class="badge ok">已实现</span></div>
       <h3>访达右键服务</h3>
-      <p>在访达右键 → 服务，可新建 Excel / Word / PPT / 文本 / Markdown（内置空白模板，无需装 Office）、复制路径 / 文件名、压缩为 zip、解压、彻底删除。</p>
+      <p>在访达右键 → 服务，可新建 Excel / Word / PPT / 文本 / Markdown（内置空白模板，生成的是真 Microsoft Office 文档）、复制路径 / 文件名、压缩为 zip、解压、彻底删除；还可复制到 / 移动到常用目录、用指定 App 打开（目录与 App 在「右键服务」设置页配置，改完即时生效）。</p>
       <div class="note">基于 macOS「服务」机制，无需公证即可被系统发现。</div>
     </div>
 
@@ -226,14 +226,14 @@
   <p class="title-sub">诚实交代：哪些是现在就能用，哪些还在路上</p>
   <table>
     <tr><th>功能</th><th>状态</th><th>说明</th></tr>
-    <tr><td>收起 / 恢复 / 工作区 / 分屏 / 右键服务 / 批量退出</td><td class="y">✅ 现在可用</td><td>本机实测通过</td></tr>
+    <tr><td>收起 / 恢复 / 工作区 / 分屏 / 右键服务 / 批量退出 / 常用目录 / 用指定 App 打开</td><td class="y">✅ 现在可用</td><td>本机实测通过</td></tr>
     <tr><td>窗口缩略图</td><td class="y">✅ 现在可用</td><td>需授予“屏幕录制”权限（仅本机生成）</td></tr>
-    <tr><td>常用目录（复制到 / 移动到）</td><td class="n">🔜 规划中</td><td>设置页可先添加目录，但对应服务尚未接入</td></tr>
-    <tr><td>用指定 App 打开</td><td class="n">🔜 规划中</td><td>设置页可先添加 App，对应服务尚未接入</td></tr>
+    <tr><td>常用目录（复制到 / 移动到）</td><td class="y">✅ 现在可用</td><td>在「右键服务」设置页配置目录，右键直接生效</td></tr>
+    <tr><td>用指定 App 打开</td><td class="y">✅ 现在可用</td><td>在「右键服务」设置页配置 App，App 未安装时自动用默认程序打开</td></tr>
     <tr><td>Finder Sync 扩展</td><td class="n">🔜 已弃用</td><td>早期方案，因自签环境限制改用「服务」机制，更稳定</td></tr>
   </table>
   <div class="callout">
-    <b>给观众的实话：</b>设置里有“常用目录 / 用指定 App 打开”的配置入口，目前是<b>预留位</b>，点了不会立刻生效——视频里可以提一句“下个版本接上”，别演示成已能用，否则翻车。
+    <b>给观众的实话：</b>常用目录 / 用指定 App 打开 的配置入口与对应右键服务均已可用，可在「右键服务」设置页增删目录与 App，改完即时生效，无需重建。
   </div>
 </section>
 

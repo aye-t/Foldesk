@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import FoldeskShared
 
 /// 右键「服务」(NSServices) 的动作实现。
 /// 这些动作通过 app 的 Info.plist 中声明的 NSServices 注册到访达右键 → 服务 子菜单，
@@ -58,13 +59,8 @@ enum FoldeskServices {
         let dest = uniqueFileURL(in: folder, base: defaultBase, ext: ext)
         let created: Bool
         if let template,
-           let src = Bundle.main.url(forResource: template, withExtension: ext, subdirectory: "Templates") {
-            do {
-                try FileManager.default.copyItem(at: src, to: dest)
-                created = true
-            } catch {
-                created = false
-            }
+           let src = Self.templateURL(named: template, ext: ext) {
+            created = (try? FileManager.default.copyItem(at: src, to: dest)) != nil
         } else {
             created = FileManager.default.createFile(atPath: dest.path, contents: nil)
         }
@@ -143,6 +139,65 @@ enum FoldeskServices {
         return destinations
     }
 
+    // MARK: - 常用目录：复制 / 移动
+
+    /// 把 `~` 展开为绝对路径。
+    private static func expand(_ path: String) -> URL {
+        URL(fileURLWithPath: (path as NSString).expandingTildeInPath, isDirectory: true)
+    }
+
+    /// 在目标目录内为文件算出不与现有文件冲突的目标路径（保留原名）。
+    private static func uniqueDestination(in dir: URL, for file: URL) -> URL {
+        let fm = FileManager.default
+        var candidate = dir.appendingPathComponent(file.lastPathComponent)
+        var i = 2
+        while fm.fileExists(atPath: candidate.path) {
+            let ext = file.pathExtension
+            let base = file.deletingPathExtension().lastPathComponent
+            let name = ext.isEmpty ? "\(base) \(i)" : "\(base) \(i).\(ext)"
+            candidate = dir.appendingPathComponent(name)
+            i += 1
+        }
+        return candidate
+    }
+
+    /// 将选中的文件复制或移动到第 `index` 个常用目录。返回成功处理的个数。
+    @discardableResult
+    static func copyOrMove(_ urls: [URL], toDirIndex index: Int, move: Bool) -> Int {
+        let cfg = FinderSyncConfig.load()
+        guard cfg.favoriteDirs.indices.contains(index) else { return 0 }
+        let dir = expand(cfg.favoriteDirs[index].path)
+        guard (try? dir.checkResourceIsReachable()) == true else { return 0 }
+        var done = 0
+        for u in urls {
+            let dest = uniqueDestination(in: dir, for: u)
+            do {
+                if move { try FileManager.default.moveItem(at: u, to: dest) }
+                else { try FileManager.default.copyItem(at: u, to: dest) }
+                done += 1
+            } catch { continue }
+        }
+        return done
+    }
+
+    // MARK: - 用指定 App 打开
+
+    /// 用第 `index` 个预设 App 打开选中的文件。App 未安装则退化为系统默认打开。
+    @MainActor static func openWith(_ urls: [URL], appIndex index: Int) {
+        guard !urls.isEmpty else { return }
+        let cfg = FinderSyncConfig.load()
+        guard cfg.openWithApps.indices.contains(index) else { return }
+        let bundleId = cfg.openWithApps[index].bundleId
+        guard let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else {
+            for u in urls { NSWorkspace.shared.open(u) }
+            return
+        }
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.open(urls, withApplicationAt: appURL, configuration: configuration) { _, error in
+            if let error { NSLog("Foldesk: 用指定 App 打开失败: \(error.localizedDescription)") }
+        }
+    }
+
     // MARK: - 彻底删除（二次确认）
 
     @MainActor static func permanentDelete(_ urls: [URL]) {
@@ -169,6 +224,20 @@ enum FoldeskServices {
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(text, forType: .string)
+    }
+
+    /// 在多个候选位置查找模板文件，覆盖 .app 打包与 `swift build` / Xcode 调试构建，
+    /// 确保新建 Excel / Word / PPT 拿到的是真文档，而非 0 字节空文件。
+    private static func templateURL(named: String, ext: String) -> URL? {
+        let candidates: [URL?] = [
+            Bundle.main.url(forResource: named, withExtension: ext, subdirectory: "Templates"),
+            Bundle.main.resourceURL?.appendingPathComponent("Templates/\(named).\(ext)"),
+            Bundle.main.resourceURL?.appendingPathComponent("Resources/Templates/\(named).\(ext)"),
+            Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("Templates/\(named).\(ext)"),
+            Bundle.main.executableURL?.deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("Sources/Foldesk/Resources/Templates/\(named).\(ext)")
+        ]
+        return candidates.compactMap { $0 }.first { FileManager.default.fileExists(atPath: $0.path) }
     }
 
     private static func uniqueFileURL(in folder: URL, base: String, ext: String) -> URL {

@@ -144,6 +144,114 @@
             <key>NSRequiredContext</key>
             <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：复制到常用目录 1</string></dict>
+            <key>NSMessage</key>
+            <string>foldCopyToDir1</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSSendTypes</key>
+            <array><string>NSFilenamesPboardType</string></array>
+            <key>NSRequiredContext</key>
+            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：复制到常用目录 2</string></dict>
+            <key>NSMessage</key>
+            <string>foldCopyToDir2</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSSendTypes</key>
+            <array><string>NSFilenamesPboardType</string></array>
+            <key>NSRequiredContext</key>
+            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：复制到常用目录 3</string></dict>
+            <key>NSMessage</key>
+            <string>foldCopyToDir3</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSSendTypes</key>
+            <array><string>NSFilenamesPboardType</string></array>
+            <key>NSRequiredContext</key>
+            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：移动到常用目录 1</string></dict>
+            <key>NSMessage</key>
+            <string>foldMoveToDir1</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSSendTypes</key>
+            <array><string>NSFilenamesPboardType</string></array>
+            <key>NSRequiredContext</key>
+            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：移动到常用目录 2</string></dict>
+            <key>NSMessage</key>
+            <string>foldMoveToDir2</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSSendTypes</key>
+            <array><string>NSFilenamesPboardType</string></array>
+            <key>NSRequiredContext</key>
+            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：移动到常用目录 3</string></dict>
+            <key>NSMessage</key>
+            <string>foldMoveToDir3</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSSendTypes</key>
+            <array><string>NSFilenamesPboardType</string></array>
+            <key>NSRequiredContext</key>
+            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：用指定 App 打开 1</string></dict>
+            <key>NSMessage</key>
+            <string>foldOpenWith1</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSSendTypes</key>
+            <array><string>NSFilenamesPboardType</string></array>
+            <key>NSRequiredContext</key>
+            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：用指定 App 打开 2</string></dict>
+            <key>NSMessage</key>
+            <string>foldOpenWith2</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSSendTypes</key>
+            <array><string>NSFilenamesPboardType</string></array>
+            <key>NSRequiredContext</key>
+            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：用指定 App 打开 3</string></dict>
+            <key>NSMessage</key>
+            <string>foldOpenWith3</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSSendTypes</key>
+            <array><string>NSFilenamesPboardType</string></array>
+            <key>NSRequiredContext</key>
+            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
     </array>
 </dict>
 </plist>

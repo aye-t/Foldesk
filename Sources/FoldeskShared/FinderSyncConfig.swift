@@ -30,7 +30,7 @@ public struct OpenWithApp: Codable, Identifiable, Hashable {
 }
 
 /// 各文件操作类菜单项的独立开关。缺省全部开启。
-public struct Features: Codable {
+public struct Features: Codable, Equatable {
     public var copyName: Bool
     public var sendAliasToDesktop: Bool
     public var compress: Bool
@@ -55,7 +55,7 @@ public struct Features: Codable {
     }
 }
 
-public struct FinderSyncConfig: Codable {
+public struct FinderSyncConfig: Codable, Equatable {
     public var enabled: Bool
     public var favoriteDirs: [FavoriteDir]
     /// 新建文件模板开关，键：xlsx / docx / pptx / txt / md / empty

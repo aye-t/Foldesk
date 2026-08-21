@@ -141,6 +141,45 @@ final class FoldeskAppDelegate: NSObject, NSApplicationDelegate {
         FoldeskServices.permanentDelete(FoldeskServices.fileURLs(from: pboard))
     }
 
+    /// 复制到常用目录 1 / 2 / 3（槽位名对应 FinderMenuPage 中配置的前 3 个目录）。
+    @objc func foldCopyToDir1(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        _ = FoldeskServices.copyOrMove(FoldeskServices.fileURLs(from: pboard), toDirIndex: 0, move: false)
+    }
+
+    @objc func foldCopyToDir2(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        _ = FoldeskServices.copyOrMove(FoldeskServices.fileURLs(from: pboard), toDirIndex: 1, move: false)
+    }
+
+    @objc func foldCopyToDir3(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        _ = FoldeskServices.copyOrMove(FoldeskServices.fileURLs(from: pboard), toDirIndex: 2, move: false)
+    }
+
+    /// 移动到常用目录 1 / 2 / 3。
+    @objc func foldMoveToDir1(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        _ = FoldeskServices.copyOrMove(FoldeskServices.fileURLs(from: pboard), toDirIndex: 0, move: true)
+    }
+
+    @objc func foldMoveToDir2(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        _ = FoldeskServices.copyOrMove(FoldeskServices.fileURLs(from: pboard), toDirIndex: 1, move: true)
+    }
+
+    @objc func foldMoveToDir3(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        _ = FoldeskServices.copyOrMove(FoldeskServices.fileURLs(from: pboard), toDirIndex: 2, move: true)
+    }
+
+    /// 用指定 App 打开 1 / 2 / 3（槽位名对应 FinderMenuPage 中配置的前 3 个 App）。
+    @objc func foldOpenWith1(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        FoldeskServices.openWith(FoldeskServices.fileURLs(from: pboard), appIndex: 0)
+    }
+
+    @objc func foldOpenWith2(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        FoldeskServices.openWith(FoldeskServices.fileURLs(from: pboard), appIndex: 1)
+    }
+
+    @objc func foldOpenWith3(_ pboard: NSPasteboard, userData: String?, error: NSErrorPointer) {
+        FoldeskServices.openWith(FoldeskServices.fileURLs(from: pboard), appIndex: 2)
+    }
+
     private func createFileFromFinder(template: String?, ext: String) {
         Task.detached(priority: .userInitiated) {
             let folder = FoldeskServices.currentFinderFolder()
