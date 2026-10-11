@@ -354,7 +354,10 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
         let desktop = URL(fileURLWithPath: FinderSyncConfig.realHomeDirectoryPath, isDirectory: true)
             .appendingPathComponent("Desktop", isDirectory: true)
         for source in urls {
-            let destination = uniqueURL(in: desktop, fileName: source.lastPathComponent)
+            // 遵循 macOS 原生「制作替身」的命名（`原名 替身`）。若沿用源文件名，
+            // 桌面上会出现一个与源文件同名、实际却是 alias 的文件：双击虽能跳到
+            // 源文件，但一旦被外发/上传，对方拿到的是打不开的别名，而用户以为是副本。
+            let destination = uniqueAliasURL(in: desktop, sourceName: source.lastPathComponent)
             do {
                 let data = try source.bookmarkData(options: .suitableForBookmarkFile, includingResourceValuesForKeys: nil, relativeTo: nil)
                 try URL.writeBookmarkData(data, to: destination)
@@ -363,6 +366,19 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
                 return
             }
         }
+    }
+
+    /// 替身的去重命名。不能复用 `uniqueURL`：`报告.docx 替身` 在
+    /// `NSString.pathExtension` 眼里扩展名是 `docx 替身`，重名时会得到
+    /// `报告 2.docx 替身` 这种错位结果。
+    private func uniqueAliasURL(in directory: URL, sourceName: String) -> URL {
+        let base = sourceName + " 替身"
+        for index in 1...10_000 {
+            let suffix = index == 1 ? "" : " \(index)"
+            let candidate = directory.appendingPathComponent(base + suffix)
+            if !fileManager.fileExists(atPath: candidate.path) { return candidate }
+        }
+        return directory.appendingPathComponent(base + " " + UUID().uuidString)
     }
 
     @IBAction nonisolated func permanentDelete(_ sender: AnyObject?) { onMain { $0.performPermanentDelete() } }
