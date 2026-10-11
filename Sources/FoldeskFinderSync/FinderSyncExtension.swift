@@ -90,8 +90,11 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
     // MARK: - Menu construction
 
     private func newFileMenu(config: FinderSyncConfig) -> NSMenuItem {
-        let item = NSMenuItem(title: "新建文件", action: nil, keyEquivalent: "")
-        let submenu = NSMenu(title: "新建文件")
+        // 刻意带上 Foldesk 标识：WPS 等办公软件会往同一个右键菜单里插自己的
+        // “新建”项（见 WPSFinderMenu.appex），不带标识时用户分不清点了谁。
+        let title = "新建文件（Foldesk）"
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        let submenu = NSMenu(title: title)
         for kind in FoldeskNewFileKind.allCases
         where config.newFileTemplates[kind.rawValue] ?? true {
             submenu.addItem(actionItem(
@@ -216,9 +219,21 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
         // selectedItemURLs，再算会错误地退回父目录。菜单展开时的目标
         // 目录是本次操作唯一稳定的上下文。
         let directory = pendingDirectory ?? currentTargetDirectory()
-        let resources = Bundle(for: FinderSyncExtension.self).resourceURL
-        guard let directory, let resources else {
-            finderLog.error("missing Finder target or extension resources type=\(kind.rawValue, privacy: .public)")
+        guard let directory else {
+            // 以前这里是静默 return：用户点了菜单什么都不会发生，也不会知道为什么。
+            finderLog.error("missing Finder target directory type=\(kind.rawValue, privacy: .public)")
+            showError(
+                title: "没有确定要新建到哪个文件夹",
+                message: "Finder 没有把当前文件夹传给 Foldesk。请回到目标文件夹的空白处重新右键，再选一次「新建文件」。"
+            )
+            return
+        }
+        guard let resources = Bundle(for: FinderSyncExtension.self).resourceURL else {
+            finderLog.error("missing extension resources type=\(kind.rawValue, privacy: .public)")
+            showError(
+                title: "扩展资源缺失",
+                message: "找不到扩展包内的模板目录，Office 文档无法创建。请重新运行 scripts/install-local.sh 安装完整版本。"
+            )
             return
         }
         let didAccess = directory.startAccessingSecurityScopedResource()
@@ -226,12 +241,13 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
             if didAccess { directory.stopAccessingSecurityScopedResource() }
         }
         do {
-            _ = try FoldeskNewFileCreator.create(
+            let created = try FoldeskNewFileCreator.create(
                 kind,
                 in: directory,
                 templatesDirectory: resources.appendingPathComponent("Templates", isDirectory: true)
             )
-            finderLog.notice("created type=\(kind.rawValue, privacy: .public)")
+            // 记下真实落盘位置：排查“文件到底建到哪去了”时这是唯一可靠依据。
+            finderLog.notice("created type=\(kind.rawValue, privacy: .public) at=\(created.path, privacy: .public)")
         } catch {
             finderLog.error("failed type=\(kind.rawValue, privacy: .public) error=\(error.localizedDescription, privacy: .private)")
             showError(title: "新建文件失败", message: error.localizedDescription)
