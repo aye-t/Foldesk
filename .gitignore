@@ -3,3 +3,7 @@
 .codex/
 dist/
 .workbuddy/
+
+# FocusDock 的桌面宠物素材，与 Foldesk 无关，不进版本库（本地文件保留）
+chibi_cat_all_19_images/
+desktop_pet_puppy_19_actions/
