@@ -68,6 +68,24 @@ Microsoft Office 和 WPS 使用相同的 `.docx`、`.xlsx`、`.pptx` 标准文�
 3. 打开 Foldesk →「超级右键」→「打开 Finder 扩展设置」，启用“Foldesk 右键菜单”。
 4. 在 Finder 当前文件夹空白处右键 → **新建文件**。
 
+### 菜单不出现，或点了没反应？
+
+这两种现象的原因完全不同，先跑自检分清是哪一种：
+
+```bash
+./scripts/diagnose-finder-menu.sh                  # 只检查，不改动任何文件
+./scripts/diagnose-finder-menu.sh --restart-finder # 检查后重启访达以刷新扩展
+```
+
+自检会逐项确认：安装位置、扩展包与 Office 模板完整性、扩展进程是否被系统加载、
+`~/Library/Application Support/Foldesk/findersync.json` 与扩展是否读到同一份配置、
+以及 Gatekeeper 状态。
+
+如果自检显示“扩展进程未运行”，通常是系统还没启用它：打开 Foldesk →
+「超级右键」→「打开 Finder 扩展设置」，勾选“Foldesk 右键菜单”，然后重启访达。
+
+改动扩展代码后必须让访达重新加载才会生效（`--restart-finder` 或手动 `killall Finder`）。
+
 **已知限制**
 
 - Finder Sync 菜单仅在 Finder 中出现；其他应用的右键由对应应用控制。

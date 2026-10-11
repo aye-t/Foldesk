@@ -29,11 +29,11 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
         )
     }
 
+    /// 与 `FinderSyncConfig.realHomeDirectoryPath` 保持一致：沙盒里的
+    /// `FileManager.homeDirectoryForCurrentUser` 会指向扩展自己的容器，
+    /// 用它做监听根目录会让桌面、文稿、下载全部收不到右键菜单。
     private static var realHomeDirectoryURL: URL {
-        if let entry = getpwuid(getuid()), let path = entry.pointee.pw_dir {
-            return URL(fileURLWithPath: String(cString: path), isDirectory: true)
-        }
-        return FileManager.default.homeDirectoryForCurrentUser
+        URL(fileURLWithPath: FinderSyncConfig.realHomeDirectoryPath, isDirectory: true)
     }
 
     override func menu(for menuKind: FIMenuKind) -> NSMenu? {
@@ -170,6 +170,22 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
         NSMenuItem(title: title, action: action, keyEquivalent: "")
     }
 
+    /// 所有菜单动作的统一入口。
+    ///
+    /// Finder 是在自己的 XPC 队列上调用菜单 selector 的，而 Swift 6 会把带
+    /// `@IBAction` 的方法隐式视为 `@MainActor`。一旦在入口方法体里直接碰 AppKit，
+    /// 就会命中 `dispatch_assert_queue` 断言、整个扩展进程被系统终止 —— 表现为
+    /// 点了菜单毫无反应，或菜单随之消失。所以入口一律 `nonisolated`，只负责把
+    /// 工作交给主线程，真正的实现放在不带 `@IBAction` 的私有方法里。
+    private nonisolated func onMain(
+        _ action: @escaping @MainActor @Sendable (FinderSyncExtension) -> Void
+    ) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            action(self)
+        }
+    }
+
     // MARK: - New file
 
     // macOS 26 会在 Finder 的 XPC 队列上调用菜单 selector；Swift 6 则会
@@ -224,28 +240,31 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
 
     // MARK: - Clipboard and file operations
 
-    @IBAction func copyPaths(_ sender: AnyObject?) {
-        let urls = selectedURLs()
+    @IBAction nonisolated func copyPaths(_ sender: AnyObject?) { onMain { $0.performCopyPaths() } }
+    @IBAction nonisolated func copyNames(_ sender: AnyObject?) { onMain { $0.performCopyNames() } }
+
+    private func performCopyPaths() {
+        let urls = actionSelectedURLs()
         guard !urls.isEmpty else { return }
         writePasteboard(urls.map(\.path).joined(separator: "\n"))
     }
 
-    @IBAction func copyNames(_ sender: AnyObject?) {
-        let urls = selectedURLs()
+    private func performCopyNames() {
+        let urls = actionSelectedURLs()
         guard !urls.isEmpty else { return }
         writePasteboard(urls.map(\.lastPathComponent).joined(separator: "\n"))
     }
 
-    @IBAction func copyToFavorite0(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 0, move: false) }
-    @IBAction func copyToFavorite1(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 1, move: false) }
-    @IBAction func copyToFavorite2(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 2, move: false) }
-    @IBAction func moveToFavorite0(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 0, move: true) }
-    @IBAction func moveToFavorite1(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 1, move: true) }
-    @IBAction func moveToFavorite2(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 2, move: true) }
+    @IBAction nonisolated func copyToFavorite0(_ sender: AnyObject?) { onMain { $0.copyOrMove(favoriteIndex: 0, move: false) } }
+    @IBAction nonisolated func copyToFavorite1(_ sender: AnyObject?) { onMain { $0.copyOrMove(favoriteIndex: 1, move: false) } }
+    @IBAction nonisolated func copyToFavorite2(_ sender: AnyObject?) { onMain { $0.copyOrMove(favoriteIndex: 2, move: false) } }
+    @IBAction nonisolated func moveToFavorite0(_ sender: AnyObject?) { onMain { $0.copyOrMove(favoriteIndex: 0, move: true) } }
+    @IBAction nonisolated func moveToFavorite1(_ sender: AnyObject?) { onMain { $0.copyOrMove(favoriteIndex: 1, move: true) } }
+    @IBAction nonisolated func moveToFavorite2(_ sender: AnyObject?) { onMain { $0.copyOrMove(favoriteIndex: 2, move: true) } }
 
     private func copyOrMove(favoriteIndex: Int, move: Bool) {
         let config = FinderSyncConfig.load()
-        let sources = selectedURLs()
+        let sources = actionSelectedURLs()
         guard config.favoriteDirs.indices.contains(favoriteIndex), !sources.isEmpty else { return }
         let requestDestination = URL(
             fileURLWithPath: expand(config.favoriteDirs[favoriteIndex].path),
@@ -267,8 +286,10 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
         }
     }
 
-    @IBAction func compress(_ sender: AnyObject?) {
-        let urls = selectedURLs()
+    @IBAction nonisolated func compress(_ sender: AnyObject?) { onMain { $0.performCompress() } }
+
+    private func performCompress() {
+        let urls = actionSelectedURLs()
         guard let first = urls.first else { return }
         let parent = first.deletingLastPathComponent()
         let base = urls.count == 1 ? first.deletingPathExtension().lastPathComponent : "Foldesk归档"
@@ -280,8 +301,10 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
         )
     }
 
-    @IBAction func extract(_ sender: AnyObject?) {
-        let urls = selectedURLs()
+    @IBAction nonisolated func extract(_ sender: AnyObject?) { onMain { $0.performExtract() } }
+
+    private func performExtract() {
+        let urls = actionSelectedURLs()
         guard !urls.isEmpty else { return }
         for source in urls where source.pathExtension.lowercased() == "zip" {
             let destination = uniqueDirectory(
@@ -305,10 +328,15 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
         }
     }
 
-    @IBAction func sendAliases(_ sender: AnyObject?) {
-        let urls = selectedURLs()
+    @IBAction nonisolated func sendAliases(_ sender: AnyObject?) { onMain { $0.performSendAliases() } }
+
+    private func performSendAliases() {
+        let urls = actionSelectedURLs()
         guard !urls.isEmpty else { return }
-        let desktop = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Desktop", isDirectory: true)
+        // 沙盒里 `homeDirectoryForCurrentUser` 是容器数据目录，直接把替身写进去
+        // 用户永远看不到。桌面必须由真实 home 推导。
+        let desktop = URL(fileURLWithPath: FinderSyncConfig.realHomeDirectoryPath, isDirectory: true)
+            .appendingPathComponent("Desktop", isDirectory: true)
         for source in urls {
             let destination = uniqueURL(in: desktop, fileName: source.lastPathComponent)
             do {
@@ -321,8 +349,10 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
         }
     }
 
-    @IBAction func permanentDelete(_ sender: AnyObject?) {
-        let urls = selectedURLs()
+    @IBAction nonisolated func permanentDelete(_ sender: AnyObject?) { onMain { $0.performPermanentDelete() } }
+
+    private func performPermanentDelete() {
+        let urls = actionSelectedURLs()
         guard !urls.isEmpty else { return }
         let protected = urls.filter(isProtectedDeletionTarget)
         guard protected.isEmpty else {
@@ -347,13 +377,13 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
 
     // MARK: - Explicit open actions
 
-    @IBAction func openWithApplication0(_ sender: AnyObject?) { openWithApplication(index: 0) }
-    @IBAction func openWithApplication1(_ sender: AnyObject?) { openWithApplication(index: 1) }
-    @IBAction func openWithApplication2(_ sender: AnyObject?) { openWithApplication(index: 2) }
+    @IBAction nonisolated func openWithApplication0(_ sender: AnyObject?) { onMain { $0.openWithApplication(index: 0) } }
+    @IBAction nonisolated func openWithApplication1(_ sender: AnyObject?) { onMain { $0.openWithApplication(index: 1) } }
+    @IBAction nonisolated func openWithApplication2(_ sender: AnyObject?) { onMain { $0.openWithApplication(index: 2) } }
 
     private func openWithApplication(index: Int) {
         let config = FinderSyncConfig.load()
-        let urls = selectedURLs()
+        let urls = actionSelectedURLs()
         guard config.openWithApps.indices.contains(index), !urls.isEmpty,
               let application = applicationURL(config.openWithApps[index].bundleId) else { return }
         NSWorkspace.shared.open(
@@ -363,9 +393,9 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
         )
     }
 
-    @IBAction func openFavorite0(_ sender: AnyObject?) { openFavorite(index: 0) }
-    @IBAction func openFavorite1(_ sender: AnyObject?) { openFavorite(index: 1) }
-    @IBAction func openFavorite2(_ sender: AnyObject?) { openFavorite(index: 2) }
+    @IBAction nonisolated func openFavorite0(_ sender: AnyObject?) { onMain { $0.openFavorite(index: 0) } }
+    @IBAction nonisolated func openFavorite1(_ sender: AnyObject?) { onMain { $0.openFavorite(index: 1) } }
+    @IBAction nonisolated func openFavorite2(_ sender: AnyObject?) { onMain { $0.openFavorite(index: 2) } }
 
     private func openFavorite(index: Int) {
         let config = FinderSyncConfig.load()
@@ -373,7 +403,9 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
         NSWorkspace.shared.open(URL(fileURLWithPath: expand(config.favoriteDirs[index].path), isDirectory: true))
     }
 
-    @IBAction func openTerminal(_ sender: AnyObject?) {
+    @IBAction nonisolated func openTerminal(_ sender: AnyObject?) { onMain { $0.performOpenTerminal() } }
+
+    private func performOpenTerminal() {
         guard let directory = currentTargetDirectory(),
               let terminal = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Terminal") else { return }
         NSWorkspace.shared.open(
@@ -385,13 +417,23 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
 
     // MARK: - Finder context and helpers
 
+    /// 菜单构建阶段使用：严格反映 Finder 此刻的选中项，不回退。
+    /// 这里若回退到上一轮快照，会拿旧选中项构造出错误菜单。
     private func selectedURLs() -> [URL] {
-        FIFinderSyncController.`default`().selectedItemURLs() ?? pendingSelectedURLs
+        FIFinderSyncController.`default`().selectedItemURLs() ?? []
+    }
+
+    /// 动作执行阶段使用。Finder 在动作回调里可能拿不到选中项（macOS 26 上会
+    /// 返回空数组而不是 nil），此时必须回退到菜单展开时记录的快照，否则
+    /// 「复制路径 / 压缩 / 彻底删除」等会静默失败 —— 用户看到的是点了没反应。
+    private func actionSelectedURLs() -> [URL] {
+        let live = FIFinderSyncController.`default`().selectedItemURLs() ?? []
+        return live.isEmpty ? pendingSelectedURLs : live
     }
 
     private func currentTargetDirectory() -> URL? {
         let controller = FIFinderSyncController.`default`()
-        let selected = selectedURLs()
+        let selected = actionSelectedURLs()
         guard let targeted = controller.targetedURL() ?? selected.first else { return pendingDirectory }
         var isDirectory: ObjCBool = false
         if fileManager.fileExists(atPath: targeted.path, isDirectory: &isDirectory), isDirectory.boolValue {
@@ -515,7 +557,12 @@ class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
 
     private func isProtectedDeletionTarget(_ url: URL) -> Bool {
         let path = url.standardizedFileURL.resolvingSymlinksInPath().path
-        return Set(["/", NSHomeDirectory(), "/Applications", "/Library", "/System", "/Users", "/private"]).contains(path)
+        // 沙盒里的 NSHomeDirectory() 指向容器，会让家目录保护形同虚设。
+        return Set([
+            "/",
+            FinderSyncConfig.realHomeDirectoryPath,
+            "/Applications", "/Library", "/System", "/Users", "/private"
+        ]).contains(path)
     }
 
     private func showError(title: String, message: String) {

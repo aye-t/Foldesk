@@ -9,7 +9,15 @@ PLUGINS_DIR="$CONTENTS_DIR/PlugIns"
 EXTENSION_DIR="$PLUGINS_DIR/FoldeskFinderSync.appex"
 
 cd "$PROJECT_DIR"
-swift build -c release
+
+# SwiftPM 默认会用 sandbox-exec 编译 manifest。在禁止 sandbox_apply 的受限环境
+# （部分 CI / 容器 / 沙箱）里这一步会直接失败，此时传
+# FOLDESK_DISABLE_SWIFT_SANDBOX=1 关闭它即可，本机正常构建不受影响。
+SWIFT_BUILD_ARGS=(-c release)
+if [[ "${FOLDESK_DISABLE_SWIFT_SANDBOX:-0}" == "1" ]]; then
+    SWIFT_BUILD_ARGS+=(--disable-sandbox)
+fi
+swift build "${SWIFT_BUILD_ARGS[@]}"
 
 if [[ -d "$APP_DIR" ]]; then
     rm -rf "$APP_DIR"

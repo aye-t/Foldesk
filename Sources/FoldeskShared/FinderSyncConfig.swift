@@ -1,7 +1,15 @@
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#endif
 
 /// 主 app 与 Finder Sync 扩展之间共享的配置文件模型。
 /// 两者都直接读写同一个 JSON 文件，避免依赖 App Group（ad-hoc 签名下不可用）。
+///
+/// 注意：Finder Sync 扩展运行在自己的沙盒里，`FileManager` 返回的
+/// “用户目录”是 `~/Library/Containers/com.foldesk.mac.findersync/Data`，
+/// 不是真实 home。主程序写真实路径、扩展读容器路径会让配置永远对不上，
+/// 所以下面所有路径都由 `realHomeDirectoryPath` 统一推导。
 public struct FavoriteDir: Codable, Identifiable, Hashable {
     public var id: UUID
     public var name: String
@@ -80,7 +88,7 @@ public struct FinderSyncConfig: Codable, Equatable {
     }
 
     public static var `default`: FinderSyncConfig {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let home = realHomeDirectoryPath
         return FinderSyncConfig(
             enabled: true,
             favoriteDirs: [
@@ -102,9 +110,24 @@ public struct FinderSyncConfig: Codable, Equatable {
         )
     }
 
+    /// 真实用户主目录。沙盒进程里的 `FileManager.homeDirectoryForCurrentUser`
+    /// 与 `.applicationSupportDirectory` 都会指向自身容器，必须绕开它们，
+    /// 直接问 passwd 数据库要真实 home。
+    public static var realHomeDirectoryPath: String {
+        #if canImport(Darwin)
+        if let entry = getpwuid(getuid()), let directory = entry.pointee.pw_dir {
+            return String(cString: directory)
+        }
+        #endif
+        return FileManager.default.homeDirectoryForCurrentUser.path
+    }
+
+    /// 主程序与扩展必须落在同一个文件上。历史上这里用的是
+    /// `.applicationSupportDirectory`，导致扩展只能读到容器内的空路径，
+    /// 表现为“设置页改了但右键菜单毫无变化”。
     public static var configURL: URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return base.appendingPathComponent("Foldesk/findersync.json")
+        URL(fileURLWithPath: realHomeDirectoryPath, isDirectory: true)
+            .appendingPathComponent("Library/Application Support/Foldesk/findersync.json")
     }
 
     /// 兼容旧配置：缺失新字段时回退到默认值，而不是整体解析失败。
