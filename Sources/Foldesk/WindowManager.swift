@@ -49,6 +49,9 @@ final class WindowManager {
         return running.compactMap { app in
             let name = app.localizedName ?? app.bundleIdentifier ?? "未知应用"
             let pid = app.processIdentifier
+            let icon = app.bundleURL.map { NSWorkspace.shared.icon(forFile: $0.path) }
+                ?? NSImage(systemSymbolName: "app", accessibilityDescription: nil)
+                ?? NSImage()
             let windows = hasAccessibilityPermission
                 ? axWindows(pid: pid, appName: name, cgWindows: fallbackWindows[pid] ?? [])
                 : (fallbackWindows[pid] ?? [])
@@ -58,6 +61,7 @@ final class WindowManager {
                 name: name,
                 bundleIdentifier: app.bundleIdentifier,
                 bundleURL: app.bundleURL,
+                icon: icon,
                 windows: windows,
                 isActive: app.isActive
             )

@@ -19,9 +19,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>1.0.1</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+	<string>23</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>
@@ -32,57 +32,121 @@
     <string>Foldesk 需要辅助功能权限来读取、聚焦、缩小和关闭其他应用的窗口。</string>
     <key>NSScreenCaptureUsageDescription</key>
     <string>Foldesk 需要屏幕录制权限来生成窗口缩略图。窗口画面仅在本机处理，不会上传。</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Foldesk 需要访问访达当前目录，以便从右键服务在正确位置新建文件。</string>
+    <key>LSMultipleInstancesProhibited</key>
+    <true/>
     <key>NSServices</key>
     <array>
         <dict>
             <key>NSMenuItem</key>
-            <dict><key>default</key><string>Foldesk：新建 Excel</string></dict>
+            <dict><key>default</key><string>Foldesk：在此新建 Excel 文件</string></dict>
             <key>NSMessage</key>
             <string>foldNewExcel</string>
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
-            <dict><key>default</key><string>Foldesk：新建 Word</string></dict>
+            <dict><key>default</key><string>Foldesk：在此新建 Word 文件</string></dict>
             <key>NSMessage</key>
             <string>foldNewWord</string>
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
-            <dict><key>default</key><string>Foldesk：新建 PPT</string></dict>
+            <dict><key>default</key><string>Foldesk：在此新建 PPT 文件</string></dict>
             <key>NSMessage</key>
             <string>foldNewPPT</string>
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
-            <dict><key>default</key><string>Foldesk：新建文本</string></dict>
+            <dict><key>default</key><string>Foldesk：在此新建文本文件</string></dict>
             <key>NSMessage</key>
             <string>foldNewText</string>
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
-            <dict><key>default</key><string>Foldesk：新建 Markdown</string></dict>
+            <dict><key>default</key><string>Foldesk：在此新建 Markdown 文件</string></dict>
             <key>NSMessage</key>
             <string>foldNewMarkdown</string>
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：在此新建 RTF 文件</string></dict>
+            <key>NSMessage</key>
+            <string>foldNewRTF</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSRequiredContext</key>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：在此新建 CSV 文件</string></dict>
+            <key>NSMessage</key>
+            <string>foldNewCSV</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSRequiredContext</key>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：在此新建 JSON 文件</string></dict>
+            <key>NSMessage</key>
+            <string>foldNewJSON</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSRequiredContext</key>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：在此新建 HTML 文件</string></dict>
+            <key>NSMessage</key>
+            <string>foldNewHTML</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSRequiredContext</key>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：在此新建 XML 文件</string></dict>
+            <key>NSMessage</key>
+            <string>foldNewXML</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSRequiredContext</key>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict><key>default</key><string>Foldesk：在此新建空文件</string></dict>
+            <key>NSMessage</key>
+            <string>foldNewEmpty</string>
+            <key>NSPortName</key>
+            <string>com.foldesk.mac</string>
+            <key>NSRequiredContext</key>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -92,9 +156,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -104,9 +170,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -116,9 +184,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -128,9 +198,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -140,9 +212,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -152,9 +226,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -164,9 +240,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -176,9 +254,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -188,9 +268,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -200,9 +282,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -212,9 +296,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -224,9 +310,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -236,9 +324,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
         <dict>
             <key>NSMenuItem</key>
@@ -248,9 +338,11 @@
             <key>NSPortName</key>
             <string>com.foldesk.mac</string>
             <key>NSSendTypes</key>
-            <array><string>NSFilenamesPboardType</string></array>
+            <array><string>NSFilenamesPboardType</string><string>public.file-url</string></array>
+            <key>NSSendFileTypes</key>
+            <array><string>public.item</string></array>
             <key>NSRequiredContext</key>
-            <dict><key>NSServicesApplicationIdentifier</key><string>com.apple.finder</string></dict>
+            <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
         </dict>
     </array>
 </dict>

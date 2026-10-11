@@ -1,4 +1,5 @@
 import CoreGraphics
+import AppKit
 @testable import Foldesk
 import XCTest
 
@@ -41,6 +42,7 @@ final class WindowRestoreReportingTests: XCTestCase {
             name: "Safari",
             bundleIdentifier: "com.apple.Safari",
             bundleURL: nil,
+            icon: NSImage(),
             windows: [],
             isActive: false
         )

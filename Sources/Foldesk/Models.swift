@@ -72,13 +72,9 @@ struct RunningAppItem: Identifiable {
     let name: String
     let bundleIdentifier: String?
     let bundleURL: URL?
+    let icon: NSImage
     var windows: [WindowItem]
     let isActive: Bool
-
-    var icon: NSImage {
-        guard let bundleURL else { return NSImage(systemSymbolName: "app", accessibilityDescription: nil)! }
-        return NSWorkspace.shared.icon(forFile: bundleURL.path)
-    }
 }
 
 struct SavedWindowState: Codable, Hashable {

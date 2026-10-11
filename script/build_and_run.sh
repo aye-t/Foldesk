@@ -13,7 +13,8 @@ pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 "$ROOT_DIR/scripts/build-app.sh" >/dev/null
 
 open_app() {
-  /usr/bin/open -n "$APP_BUNDLE"
+  # 始终更新并启动安装版，避免 dist 副本重新抢占同 Bundle ID 的服务注册。
+  "$ROOT_DIR/scripts/install-local.sh" --skip-build
 }
 
 case "$MODE" in
@@ -36,8 +37,11 @@ case "$MODE" in
     sleep 1
     pgrep -x "$APP_NAME" >/dev/null
     ;;
+  --install|install)
+    "$ROOT_DIR/scripts/install-local.sh" --skip-build
+    ;;
   *)
-    echo "usage: $0 [run|--debug|--logs|--telemetry|--verify]" >&2
+    echo "usage: $0 [run|--debug|--logs|--telemetry|--verify|--install]" >&2
     exit 2
     ;;
 esac

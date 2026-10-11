@@ -10,7 +10,9 @@ extension Color {
 }
 
 extension NSImage {
-    static var foldeskBrandIcon: NSImage {
+    /// SwiftUI 会把 NSImage 的对象身份纳入视图更新。若每次 body 计算都重新从磁盘
+    /// 创建图片，Image(nsImage:) 会持续收到“新对象”，形成 AttributeGraph 重建循环。
+    static let foldeskBrandIcon: NSImage = {
         // SwiftPM 资源（swift run / Xcode）：优先从 module bundle 取
         if let url = Bundle.module.url(forResource: "FoldeskIcon", withExtension: "png"),
            let image = NSImage(contentsOf: url) {
@@ -22,7 +24,7 @@ extension NSImage {
             return image
         }
         return NSImage(systemSymbolName: "rectangle.3.group.fill", accessibilityDescription: "Foldesk")!
-    }
+    }()
 }
 
 struct AppIcon: View {

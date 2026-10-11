@@ -1,0 +1,203 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		100000000000000000000001 /* FinderSyncExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000001 /* FinderSyncExtension.swift */; };
+		100000000000000000000002 /* FinderSyncConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000002 /* FinderSyncConfig.swift */; };
+		100000000000000000000003 /* NewFileCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000003 /* NewFileCreator.swift */; };
+		100000000000000000000004 /* Templates in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000004 /* Templates */; };
+		100000000000000000000005 /* FinderSync.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 200000000000000000000005 /* FinderSync.framework */; };
+		100000000000000000000006 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 200000000000000000000006 /* AppKit.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		200000000000000000000001 /* FinderSyncExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FinderSyncExtension.swift; path = ../Sources/FoldeskFinderSync/FinderSyncExtension.swift; sourceTree = SOURCE_ROOT; };
+		200000000000000000000002 /* FinderSyncConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FinderSyncConfig.swift; path = ../Sources/FoldeskShared/FinderSyncConfig.swift; sourceTree = SOURCE_ROOT; };
+		200000000000000000000003 /* NewFileCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NewFileCreator.swift; path = ../Sources/FoldeskShared/NewFileCreator.swift; sourceTree = SOURCE_ROOT; };
+		200000000000000000000004 /* Templates */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Templates; path = ../Sources/Foldesk/Resources/Templates; sourceTree = SOURCE_ROOT; };
+		200000000000000000000005 /* FinderSync.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FinderSync.framework; path = System/Library/Frameworks/FinderSync.framework; sourceTree = SDKROOT; };
+		200000000000000000000006 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		200000000000000000000007 /* FoldeskFinderSync.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FoldeskFinderSync.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		300000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000005 /* FinderSync.framework in Frameworks */,
+				100000000000000000000006 /* AppKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		400000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				400000000000000000000002 /* Sources */,
+				400000000000000000000003 /* Frameworks */,
+				400000000000000000000004 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		400000000000000000000002 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000001 /* FinderSyncExtension.swift */,
+				200000000000000000000002 /* FinderSyncConfig.swift */,
+				200000000000000000000003 /* NewFileCreator.swift */,
+				200000000000000000000004 /* Templates */,
+			);
+			name = Sources;
+			sourceTree = "<group>";
+		};
+		400000000000000000000003 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000005 /* FinderSync.framework */,
+				200000000000000000000006 /* AppKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		400000000000000000000004 /* Products */ = {
+			isa = PBXGroup;
+			children = (200000000000000000000007 /* FoldeskFinderSync.appex */);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		500000000000000000000001 /* FoldeskFinderSync */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 900000000000000000000002 /* Build configuration list for PBXNativeTarget "FoldeskFinderSync" */;
+			buildPhases = (
+				300000000000000000000002 /* Sources */,
+				300000000000000000000001 /* Frameworks */,
+				300000000000000000000003 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = FoldeskFinderSync;
+			productName = FoldeskFinderSync;
+			productReference = 200000000000000000000007 /* FoldeskFinderSync.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		600000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+			};
+			buildConfigurationList = 900000000000000000000001 /* Build configuration list for PBXProject "FoldeskNative" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = zh_CN;
+			hasScannedForEncodings = 0;
+			knownRegions = (zh_CN, Base);
+			mainGroup = 400000000000000000000001;
+			productRefGroup = 400000000000000000000004 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (500000000000000000000001 /* FoldeskFinderSync */);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		300000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (100000000000000000000004 /* Templates in Resources */);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		300000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000001 /* FinderSyncExtension.swift in Sources */,
+				100000000000000000000002 /* FinderSyncConfig.swift in Sources */,
+				100000000000000000000003 /* NewFileCreator.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		700000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx;};
+			name = Debug;
+		};
+		700000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx;};
+			name = Release;
+		};
+		700000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ../Sources/FoldeskFinderSync/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.foldesk.mac.findersync;
+				PRODUCT_MODULE_NAME = FoldeskFinderSync;
+				PRODUCT_NAME = FoldeskFinderSync;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		700000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ../Sources/FoldeskFinderSync/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.foldesk.mac.findersync;
+				PRODUCT_MODULE_NAME = FoldeskFinderSync;
+				PRODUCT_NAME = FoldeskFinderSync;
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		900000000000000000000001 /* Build configuration list for PBXProject "FoldeskNative" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (700000000000000000000001, 700000000000000000000002);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		900000000000000000000002 /* Build configuration list for PBXNativeTarget "FoldeskFinderSync" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (700000000000000000000003, 700000000000000000000004);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 600000000000000000000001 /* Project object */;
+}

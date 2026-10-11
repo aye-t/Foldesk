@@ -56,9 +56,10 @@ public struct Features: Codable, Equatable {
 }
 
 public struct FinderSyncConfig: Codable, Equatable {
+    public static let serviceSlotLimit = 3
     public var enabled: Bool
     public var favoriteDirs: [FavoriteDir]
-    /// 新建文件模板开关，键：xlsx / docx / pptx / txt / md / empty
+    /// 新建文件模板开关，键来自 `FoldeskNewFileKind.rawValue`。
     public var newFileTemplates: [String: Bool]
     public var features: Features
     public var openWithApps: [OpenWithApp]
@@ -89,7 +90,8 @@ public struct FinderSyncConfig: Codable, Equatable {
             ],
             newFileTemplates: [
                 "xlsx": true, "docx": true, "pptx": true,
-                "txt": true, "md": true, "empty": true
+                "rtf": true, "txt": true, "md": true, "csv": true,
+                "json": true, "html": true, "xml": true, "empty": true
             ],
             features: Features(),
             openWithApps: [
@@ -109,6 +111,7 @@ public struct FinderSyncConfig: Codable, Equatable {
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+        // 只有前三项映射到静态服务，但不能在读取时删除旧版保存的其他项。
         favoriteDirs = try c.decodeIfPresent([FavoriteDir].self, forKey: .favoriteDirs) ?? Self.default.favoriteDirs
         newFileTemplates = try c.decodeIfPresent([String: Bool].self, forKey: .newFileTemplates) ?? Self.default.newFileTemplates
         features = try c.decodeIfPresent(Features.self, forKey: .features) ?? Features()
@@ -117,19 +120,28 @@ public struct FinderSyncConfig: Codable, Equatable {
 
     /// 读取配置；文件不存在或解析失败时回退到默认配置。
     public static func load() -> FinderSyncConfig {
-        guard let data = try? Data(contentsOf: configURL),
-              let cfg = try? JSONDecoder().decode(FinderSyncConfig.self, from: data) else {
-            return .default
-        }
-        return cfg
+        (try? load(from: configURL)) ?? .default
     }
 
-    public func save() {
-        let url = Self.configURL
-        let dir = url.deletingLastPathComponent()
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        if let data = try? JSONEncoder().encode(self) {
-            try? data.write(to: url)
+    public static func load(from url: URL) throws -> FinderSyncConfig {
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(FinderSyncConfig.self, from: data)
+    }
+
+    /// 仅首次使用（文件不存在）采用默认值；损坏或无权读取时必须停止操作。
+    public static func loadForServices(from url: URL = configURL) throws -> FinderSyncConfig {
+        do {
+            return try load(from: url)
+        } catch CocoaError.fileReadNoSuchFile {
+            return .default
         }
+    }
+
+    /// 使用原子写入，避免应用在写盘中途退出时留下半截 JSON。
+    public func save(to url: URL = Self.configURL) throws {
+        let dir = url.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let data = try JSONEncoder().encode(self)
+        try data.write(to: url, options: .atomic)
     }
 }

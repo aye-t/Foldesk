@@ -32,7 +32,17 @@ struct FoldeskApp: App {
         MenuBarExtra(
             "Foldesk",
             systemImage: "rectangle.3.group.fill",
-            isInserted: $state.preferences.keepMenuBar
+            isInserted: Binding(
+                get: { state.preferences.keepMenuBar },
+                set: { isInserted in
+                    // Scene 在更新期间可能反复回写相同值。直接使用
+                    // `$state.preferences.keepMenuBar` 会每次发布整个 preferences，
+                    // 形成 SwiftUI AttributeGraph 更新循环。
+                    guard state.preferences.keepMenuBar != isInserted else { return }
+                    state.preferences.keepMenuBar = isInserted
+                    state.savePreferences()
+                }
+            )
         ) {
             MenuPanel()
                 .environmentObject(state)

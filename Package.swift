@@ -5,8 +5,7 @@ let package = Package(
     name: "Foldesk",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "Foldesk", targets: ["Foldesk"]),
-        .executable(name: "FoldeskFinderSync", targets: ["FoldeskFinderSync"])
+        .executable(name: "Foldesk", targets: ["Foldesk"])
     ],
     targets: [
         .target(
@@ -17,20 +16,9 @@ let package = Package(
             name: "Foldesk",
             dependencies: ["FoldeskShared"],
             path: "Sources/Foldesk",
-            exclude: [
-                "Resources/Templates"
-            ],
             resources: [
+                .copy("Resources/Templates"),
                 .copy("Resources/FoldeskIcon.png")
-            ]
-        ),
-        .executableTarget(
-            name: "FoldeskFinderSync",
-            dependencies: ["FoldeskShared"],
-            path: "Sources/FoldeskFinderSync",
-            exclude: [
-                "Info.plist",
-                "Resources/Templates"
             ]
         ),
         .testTarget(

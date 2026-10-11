@@ -1,453 +1,529 @@
 import AppKit
+import Darwin
 import FinderSync
+import OSLog
+#if canImport(FoldeskShared)
 import FoldeskShared
+#endif
 
-/// 右键新建文件请求（菜单项 representedObject 承载）。
-final class NewFileRequest: NSObject {
-    let fileName: String
-    let template: String?   // 资源模板名；nil 表示直接创建空文件（txt/md/empty）
-    init(fileName: String, template: String?) {
-        self.fileName = fileName
-        self.template = template
-    }
-}
+private let finderLog = Logger(subsystem: "com.foldesk.mac.findersync", category: "new-file")
 
-/// 复制/移动到收藏目录请求。
-final class CopyMoveRequest: NSObject {
-    let destPath: String
-    let move: Bool
-    init(destPath: String, move: Bool) {
-        self.destPath = destPath
-        self.move = move
-    }
-}
-
-final class FinderSyncExtension: FIFinderSync {
+/// Finder 原生右键入口。扩展只响应用户明确点击的动作，不会因“新建文件”
+/// 唤醒 Word、WPS、Finder 或 Foldesk 主窗口。
+class FinderSyncExtension: FIFinderSync, @unchecked Sendable {
+    private let fileManager = FileManager.default
+    private var pendingDirectory: URL?
+    private var pendingSelectedURLs: [URL] = []
 
     override init() {
         super.init()
-        // nil = 监听 Finder 所有目录（含桌面与边栏），使右键菜单处处可用。
-        FIFinderSyncController.`default`().directoryURLs = nil
+        // Finder Sync 不会可靠地接受“/”作为监听根目录。直接监听实际
+        // 用户主目录，确保桌面、文稿、下载和用户自建目录都能显示菜单。
+        FIFinderSyncController.`default`().directoryURLs = Set([
+            Self.realHomeDirectoryURL,
+            URL(fileURLWithPath: "/Volumes", isDirectory: true)
+        ])
+        NSLog(
+            "FoldeskFinderSync: 扩展已加载 createDocx=%d",
+            responds(to: #selector(createDocx(_:))) ? 1 : 0
+        )
     }
 
-    // MARK: - 菜单
+    private static var realHomeDirectoryURL: URL {
+        if let entry = getpwuid(getuid()), let path = entry.pointee.pw_dir {
+            return URL(fileURLWithPath: String(cString: path), isDirectory: true)
+        }
+        return FileManager.default.homeDirectoryForCurrentUser
+    }
 
     override func menu(for menuKind: FIMenuKind) -> NSMenu? {
-        let cfg = FinderSyncConfig.load()
-        guard cfg.enabled else { return nil }
+        let config = FinderSyncConfig.load()
+        guard config.enabled else { return nil }
 
+        let selected = selectedURLs()
+        let directory = destinationDirectory(for: menuKind, selected: selected)
+        pendingSelectedURLs = selected
+        pendingDirectory = directory
         let menu = NSMenu(title: "")
 
-        menu.addItem(makeNewFileItem(cfg: cfg))
-        menu.addItem(makeCopyItem(cfg: cfg, move: false))
-        menu.addItem(makeCopyItem(cfg: cfg, move: true))
-        if let ow = makeOpenWithItem(cfg: cfg) { menu.addItem(ow) }
-        menu.addItem(makeFavoritesOpenItem(cfg: cfg))
-        menu.addItem(makeCopyPathItem())
-        if cfg.features.copyName { menu.addItem(makeCopyNameItem()) }
-        if cfg.features.sendAliasToDesktop { menu.addItem(makeSendAliasItem()) }
-        if cfg.features.compress { menu.addItem(makeCompressItem()) }
-        if cfg.features.extract { menu.addItem(makeExtractItem()) }
-        if cfg.features.permanentDelete { menu.addItem(makePermanentDeleteItem()) }
-        menu.addItem(makeAddFavoriteItem())
-        menu.addItem(makeHiddenItem(show: true))
-        menu.addItem(makeHiddenItem(show: false))
-        menu.addItem(makeTerminalItem())
+        if directory != nil {
+            // Finder 右键第一层直接显示“新建文件”，不再套 Foldesk 子菜单。
+            menu.addItem(newFileMenu(config: config))
+        }
 
-        return menu
+        if !selected.isEmpty {
+            if directory != nil { menu.addItem(.separator()) }
+            menu.addItem(copyTextItem(title: "复制完整路径", urls: selected, namesOnly: false))
+            if config.features.copyName {
+                menu.addItem(copyTextItem(title: "复制文件名", urls: selected, namesOnly: true))
+            }
+            if config.features.compress {
+                menu.addItem(actionItem(title: "压缩为 ZIP", action: #selector(compress(_:))))
+            }
+            if config.features.extract, selected.contains(where: { $0.pathExtension.lowercased() == "zip" }) {
+                menu.addItem(actionItem(title: "解压到当前文件夹", action: #selector(extract(_:))))
+            }
+            menu.addItem(copyMoveMenu(config: config, selected: selected, move: false))
+            menu.addItem(copyMoveMenu(config: config, selected: selected, move: true))
+            if config.features.openWithEnabled, !config.openWithApps.isEmpty {
+                menu.addItem(openWithMenu(config: config, selected: selected))
+            }
+            if config.features.sendAliasToDesktop {
+                menu.addItem(actionItem(title: "发送替身到桌面", action: #selector(sendAliases(_:))))
+            }
+            if config.features.permanentDelete {
+                menu.addItem(actionItem(title: "彻底删除…", action: #selector(permanentDelete(_:))))
+            }
+        }
+
+        if directory != nil {
+            menu.addItem(.separator())
+            menu.addItem(actionItem(title: "在终端中打开", action: #selector(openTerminal(_:))))
+        }
+        if !config.favoriteDirs.isEmpty {
+            menu.addItem(openFavoritesMenu(config: config))
+        }
+
+        return menu.items.isEmpty ? nil : menu
     }
 
-    // MARK: - 右键所在目录 / 选中项
+    // MARK: - Menu construction
 
-    private func controller() -> FIFinderSyncController { FIFinderSyncController.`default`() }
-
-    /// 右键目标目录：点击文件取其父目录，点击文件夹取其本身。
-    private func targetDir() -> URL {
-        let c = controller()
-        let base: URL?
-        if let t = c.targetedURL() {
-            base = t
-        } else if let first = c.selectedItemURLs()?.first {
-            base = first
-        } else {
-            base = nil
+    private func newFileMenu(config: FinderSyncConfig) -> NSMenuItem {
+        let item = NSMenuItem(title: "新建文件", action: nil, keyEquivalent: "")
+        let submenu = NSMenu(title: "新建文件")
+        for kind in FoldeskNewFileKind.allCases
+        where config.newFileTemplates[kind.rawValue] ?? true {
+            submenu.addItem(actionItem(
+                title: kind.menuTitle,
+                action: newFileSelector(for: kind)
+            ))
         }
-        guard let base else { return FileManager.default.homeDirectoryForCurrentUser }
-        var isDir: ObjCBool = false
-        if FileManager.default.fileExists(atPath: base.path, isDirectory: &isDir), isDir.boolValue {
-            return base
+        if submenu.items.isEmpty {
+            let disabled = NSMenuItem(title: "没有启用的文件类型", action: nil, keyEquivalent: "")
+            disabled.isEnabled = false
+            submenu.addItem(disabled)
         }
-        return base.deletingLastPathComponent()
+        item.submenu = submenu
+        return item
     }
+
+    private func copyTextItem(title: String, urls: [URL], namesOnly: Bool) -> NSMenuItem {
+        actionItem(
+            title: title,
+            action: namesOnly ? #selector(copyNames(_:)) : #selector(copyPaths(_:))
+        )
+    }
+
+    private func copyMoveMenu(config: FinderSyncConfig, selected: [URL], move: Bool) -> NSMenuItem {
+        let item = NSMenuItem(title: move ? "移动到常用目录" : "复制到常用目录", action: nil, keyEquivalent: "")
+        let submenu = NSMenu(title: item.title)
+        for (index, favorite) in config.favoriteDirs.prefix(FinderSyncConfig.serviceSlotLimit).enumerated() {
+            let destination = URL(fileURLWithPath: expand(favorite.path), isDirectory: true)
+            let child = actionItem(
+                title: favorite.name,
+                action: copyMoveSelector(index: index, move: move)
+            )
+            child.isEnabled = directoryIsWritable(destination)
+            submenu.addItem(child)
+        }
+        if submenu.items.isEmpty {
+            let disabled = NSMenuItem(title: "未配置常用目录", action: nil, keyEquivalent: "")
+            disabled.isEnabled = false
+            submenu.addItem(disabled)
+        }
+        item.submenu = submenu
+        return item
+    }
+
+    private func openWithMenu(config: FinderSyncConfig, selected: [URL]) -> NSMenuItem {
+        let item = NSMenuItem(title: "用指定 App 打开", action: nil, keyEquivalent: "")
+        let submenu = NSMenu(title: item.title)
+        for (index, application) in config.openWithApps.prefix(FinderSyncConfig.serviceSlotLimit).enumerated() {
+            let child = actionItem(
+                title: application.name,
+                action: openWithSelector(index: index)
+            )
+            child.isEnabled = applicationURL(application.bundleId) != nil
+            submenu.addItem(child)
+        }
+        item.submenu = submenu
+        return item
+    }
+
+    private func openFavoritesMenu(config: FinderSyncConfig) -> NSMenuItem {
+        let item = NSMenuItem(title: "打开常用目录", action: nil, keyEquivalent: "")
+        let submenu = NSMenu(title: item.title)
+        for (index, favorite) in config.favoriteDirs.prefix(FinderSyncConfig.serviceSlotLimit).enumerated() {
+            let url = URL(fileURLWithPath: expand(favorite.path), isDirectory: true)
+            let child = actionItem(title: favorite.name, action: openFavoriteSelector(index: index))
+            child.isEnabled = fileManager.fileExists(atPath: url.path)
+            submenu.addItem(child)
+        }
+        item.submenu = submenu
+        return item
+    }
+
+    private func actionItem(title: String, action: Selector) -> NSMenuItem {
+        // 与 Xcode Finder Sync 模板保持一致：target 留空，由 Finder 把
+        // selector 转交给扩展 principal object。
+        NSMenuItem(title: title, action: action, keyEquivalent: "")
+    }
+
+    // MARK: - New file
+
+    // macOS 26 会在 Finder 的 XPC 队列上调用菜单 selector；Swift 6 则会
+    // 把 AppKit 子类方法隐式视为 MainActor。入口必须 nonisolated，再显式
+    // 跳回主线程，否则一点菜单扩展就会被 dispatch_assert_queue 终止。
+    @IBAction nonisolated func createDocx(_ sender: AnyObject?) { createNewFileOnMain(.docx) }
+    @IBAction nonisolated func createXlsx(_ sender: AnyObject?) { createNewFileOnMain(.xlsx) }
+    @IBAction nonisolated func createPptx(_ sender: AnyObject?) { createNewFileOnMain(.pptx) }
+    @IBAction nonisolated func createRtf(_ sender: AnyObject?) { createNewFileOnMain(.rtf) }
+    @IBAction nonisolated func createTxt(_ sender: AnyObject?) { createNewFileOnMain(.txt) }
+    @IBAction nonisolated func createMarkdown(_ sender: AnyObject?) { createNewFileOnMain(.markdown) }
+    @IBAction nonisolated func createCsv(_ sender: AnyObject?) { createNewFileOnMain(.csv) }
+    @IBAction nonisolated func createJson(_ sender: AnyObject?) { createNewFileOnMain(.json) }
+    @IBAction nonisolated func createHtml(_ sender: AnyObject?) { createNewFileOnMain(.html) }
+    @IBAction nonisolated func createXml(_ sender: AnyObject?) { createNewFileOnMain(.xml) }
+    @IBAction nonisolated func createEmpty(_ sender: AnyObject?) { createNewFileOnMain(.empty) }
+
+    private nonisolated func createNewFileOnMain(_ kind: FoldeskNewFileKind) {
+        finderLog.notice("action received type=\(kind.rawValue, privacy: .public)")
+        Task { @MainActor [weak self] in
+            finderLog.notice("main task type=\(kind.rawValue, privacy: .public)")
+            self?.createNewFile(kind)
+        }
+    }
+
+    private func createNewFile(_ kind: FoldeskNewFileKind) {
+        // Finder 在动作回调时可能把当前窗口目录同时放进
+        // selectedItemURLs，再算会错误地退回父目录。菜单展开时的目标
+        // 目录是本次操作唯一稳定的上下文。
+        let directory = pendingDirectory ?? currentTargetDirectory()
+        let resources = Bundle(for: FinderSyncExtension.self).resourceURL
+        guard let directory, let resources else {
+            finderLog.error("missing Finder target or extension resources type=\(kind.rawValue, privacy: .public)")
+            return
+        }
+        let didAccess = directory.startAccessingSecurityScopedResource()
+        defer {
+            if didAccess { directory.stopAccessingSecurityScopedResource() }
+        }
+        do {
+            _ = try FoldeskNewFileCreator.create(
+                kind,
+                in: directory,
+                templatesDirectory: resources.appendingPathComponent("Templates", isDirectory: true)
+            )
+            finderLog.notice("created type=\(kind.rawValue, privacy: .public)")
+        } catch {
+            finderLog.error("failed type=\(kind.rawValue, privacy: .public) error=\(error.localizedDescription, privacy: .private)")
+            showError(title: "新建文件失败", message: error.localizedDescription)
+        }
+    }
+
+    // MARK: - Clipboard and file operations
+
+    @IBAction func copyPaths(_ sender: AnyObject?) {
+        let urls = selectedURLs()
+        guard !urls.isEmpty else { return }
+        writePasteboard(urls.map(\.path).joined(separator: "\n"))
+    }
+
+    @IBAction func copyNames(_ sender: AnyObject?) {
+        let urls = selectedURLs()
+        guard !urls.isEmpty else { return }
+        writePasteboard(urls.map(\.lastPathComponent).joined(separator: "\n"))
+    }
+
+    @IBAction func copyToFavorite0(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 0, move: false) }
+    @IBAction func copyToFavorite1(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 1, move: false) }
+    @IBAction func copyToFavorite2(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 2, move: false) }
+    @IBAction func moveToFavorite0(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 0, move: true) }
+    @IBAction func moveToFavorite1(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 1, move: true) }
+    @IBAction func moveToFavorite2(_ sender: AnyObject?) { copyOrMove(favoriteIndex: 2, move: true) }
+
+    private func copyOrMove(favoriteIndex: Int, move: Bool) {
+        let config = FinderSyncConfig.load()
+        let sources = selectedURLs()
+        guard config.favoriteDirs.indices.contains(favoriteIndex), !sources.isEmpty else { return }
+        let requestDestination = URL(
+            fileURLWithPath: expand(config.favoriteDirs[favoriteIndex].path),
+            isDirectory: true
+        )
+        guard directoryIsWritable(requestDestination) else { return }
+        for source in sources {
+            let destination = uniqueURL(in: requestDestination, fileName: source.lastPathComponent)
+            do {
+                if move {
+                    try fileManager.moveItem(at: source, to: destination)
+                } else {
+                    try fileManager.copyItem(at: source, to: destination)
+                }
+            } catch {
+                showError(title: move ? "移动失败" : "复制失败", message: "\(source.lastPathComponent)：\(error.localizedDescription)")
+                return
+            }
+        }
+    }
+
+    @IBAction func compress(_ sender: AnyObject?) {
+        let urls = selectedURLs()
+        guard let first = urls.first else { return }
+        let parent = first.deletingLastPathComponent()
+        let base = urls.count == 1 ? first.deletingPathExtension().lastPathComponent : "Foldesk归档"
+        let destination = uniqueURL(in: parent, fileName: base + ".zip")
+        run(
+            executable: "/usr/bin/zip",
+            arguments: ["-q", "-r", destination.path, "--"] + urls.map(\.path),
+            failureTitle: "压缩失败"
+        )
+    }
+
+    @IBAction func extract(_ sender: AnyObject?) {
+        let urls = selectedURLs()
+        guard !urls.isEmpty else { return }
+        for source in urls where source.pathExtension.lowercased() == "zip" {
+            let destination = uniqueDirectory(
+                in: source.deletingLastPathComponent(),
+                baseName: source.deletingPathExtension().lastPathComponent
+            )
+            do {
+                try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
+            } catch {
+                showError(title: "解压失败", message: error.localizedDescription)
+                return
+            }
+            if !run(
+                executable: "/usr/bin/ditto",
+                arguments: ["-x", "-k", source.path, destination.path],
+                failureTitle: "解压失败"
+            ) {
+                try? fileManager.removeItem(at: destination)
+                return
+            }
+        }
+    }
+
+    @IBAction func sendAliases(_ sender: AnyObject?) {
+        let urls = selectedURLs()
+        guard !urls.isEmpty else { return }
+        let desktop = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Desktop", isDirectory: true)
+        for source in urls {
+            let destination = uniqueURL(in: desktop, fileName: source.lastPathComponent)
+            do {
+                let data = try source.bookmarkData(options: .suitableForBookmarkFile, includingResourceValuesForKeys: nil, relativeTo: nil)
+                try URL.writeBookmarkData(data, to: destination)
+            } catch {
+                showError(title: "创建替身失败", message: error.localizedDescription)
+                return
+            }
+        }
+    }
+
+    @IBAction func permanentDelete(_ sender: AnyObject?) {
+        let urls = selectedURLs()
+        guard !urls.isEmpty else { return }
+        let protected = urls.filter(isProtectedDeletionTarget)
+        guard protected.isEmpty else {
+            showError(title: "不能删除", message: "所选项目包含受保护的系统目录。")
+            return
+        }
+        let alert = NSAlert()
+        alert.alertStyle = .critical
+        alert.messageText = "彻底删除 \(urls.count) 项？"
+        alert.informativeText = "文件不会进入废纸篓，此操作无法撤销。"
+        alert.addButton(withTitle: "删除")
+        alert.addButton(withTitle: "取消")
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        for url in urls {
+            do { try fileManager.removeItem(at: url) }
+            catch {
+                showError(title: "删除失败", message: "\(url.lastPathComponent)：\(error.localizedDescription)")
+                return
+            }
+        }
+    }
+
+    // MARK: - Explicit open actions
+
+    @IBAction func openWithApplication0(_ sender: AnyObject?) { openWithApplication(index: 0) }
+    @IBAction func openWithApplication1(_ sender: AnyObject?) { openWithApplication(index: 1) }
+    @IBAction func openWithApplication2(_ sender: AnyObject?) { openWithApplication(index: 2) }
+
+    private func openWithApplication(index: Int) {
+        let config = FinderSyncConfig.load()
+        let urls = selectedURLs()
+        guard config.openWithApps.indices.contains(index), !urls.isEmpty,
+              let application = applicationURL(config.openWithApps[index].bundleId) else { return }
+        NSWorkspace.shared.open(
+            urls,
+            withApplicationAt: application,
+            configuration: NSWorkspace.OpenConfiguration()
+        )
+    }
+
+    @IBAction func openFavorite0(_ sender: AnyObject?) { openFavorite(index: 0) }
+    @IBAction func openFavorite1(_ sender: AnyObject?) { openFavorite(index: 1) }
+    @IBAction func openFavorite2(_ sender: AnyObject?) { openFavorite(index: 2) }
+
+    private func openFavorite(index: Int) {
+        let config = FinderSyncConfig.load()
+        guard config.favoriteDirs.indices.contains(index) else { return }
+        NSWorkspace.shared.open(URL(fileURLWithPath: expand(config.favoriteDirs[index].path), isDirectory: true))
+    }
+
+    @IBAction func openTerminal(_ sender: AnyObject?) {
+        guard let directory = currentTargetDirectory(),
+              let terminal = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Terminal") else { return }
+        NSWorkspace.shared.open(
+            [directory],
+            withApplicationAt: terminal,
+            configuration: NSWorkspace.OpenConfiguration()
+        )
+    }
+
+    // MARK: - Finder context and helpers
 
     private func selectedURLs() -> [URL] {
-        controller().selectedItemURLs() ?? []
+        FIFinderSyncController.`default`().selectedItemURLs() ?? pendingSelectedURLs
+    }
+
+    private func currentTargetDirectory() -> URL? {
+        let controller = FIFinderSyncController.`default`()
+        let selected = selectedURLs()
+        guard let targeted = controller.targetedURL() ?? selected.first else { return pendingDirectory }
+        var isDirectory: ObjCBool = false
+        if fileManager.fileExists(atPath: targeted.path, isDirectory: &isDirectory), isDirectory.boolValue {
+            // 选中了一个文件夹时，右键动作仍落在它的父目录；在空白处右键时
+            // selected 为空，此时 targeted 正是当前 Finder 目录。
+            return selected.contains(targeted) ? targeted.deletingLastPathComponent() : targeted
+        }
+        return targeted.deletingLastPathComponent()
+    }
+
+    private func newFileSelector(for kind: FoldeskNewFileKind) -> Selector {
+        switch kind {
+        case .docx: #selector(createDocx(_:))
+        case .xlsx: #selector(createXlsx(_:))
+        case .pptx: #selector(createPptx(_:))
+        case .rtf: #selector(createRtf(_:))
+        case .txt: #selector(createTxt(_:))
+        case .markdown: #selector(createMarkdown(_:))
+        case .csv: #selector(createCsv(_:))
+        case .json: #selector(createJson(_:))
+        case .html: #selector(createHtml(_:))
+        case .xml: #selector(createXml(_:))
+        case .empty: #selector(createEmpty(_:))
+        }
+    }
+
+    private func copyMoveSelector(index: Int, move: Bool) -> Selector {
+        if move {
+            return [#selector(moveToFavorite0(_:)), #selector(moveToFavorite1(_:)), #selector(moveToFavorite2(_:))][index]
+        }
+        return [#selector(copyToFavorite0(_:)), #selector(copyToFavorite1(_:)), #selector(copyToFavorite2(_:))][index]
+    }
+
+    private func openWithSelector(index: Int) -> Selector {
+        [#selector(openWithApplication0(_:)), #selector(openWithApplication1(_:)), #selector(openWithApplication2(_:))][index]
+    }
+
+    private func openFavoriteSelector(index: Int) -> Selector {
+        [#selector(openFavorite0(_:)), #selector(openFavorite1(_:)), #selector(openFavorite2(_:))][index]
+    }
+
+    private func destinationDirectory(for menuKind: FIMenuKind, selected: [URL]) -> URL? {
+        let controller = FIFinderSyncController.`default`()
+        if menuKind == .contextualMenuForItems, let first = selected.first {
+            // 在文件或文件夹图标上右键时，与 Windows 一样在其所在目录创建，
+            // 而不是误把新文件塞进被选中的文件夹内部。
+            return first.deletingLastPathComponent()
+        }
+        guard let targeted = controller.targetedURL() ?? selected.first else { return nil }
+        var isDirectory: ObjCBool = false
+        if fileManager.fileExists(atPath: targeted.path, isDirectory: &isDirectory), isDirectory.boolValue {
+            return targeted
+        }
+        return targeted.deletingLastPathComponent()
+    }
+
+    private func applicationURL(_ identifierOrPath: String) -> URL? {
+        let value = identifierOrPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.hasPrefix("/") {
+            return fileManager.fileExists(atPath: value) ? URL(fileURLWithPath: value) : nil
+        }
+        return NSWorkspace.shared.urlForApplication(withBundleIdentifier: value)
+    }
+
+    private func directoryIsWritable(_ url: URL) -> Bool {
+        var isDirectory: ObjCBool = false
+        return fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory)
+            && isDirectory.boolValue
+            && fileManager.isWritableFile(atPath: url.path)
+    }
+
+    private func uniqueURL(in directory: URL, fileName: String) -> URL {
+        let value = fileName as NSString
+        let base = value.deletingPathExtension
+        let ext = value.pathExtension
+        for index in 1...10_000 {
+            let suffix = index == 1 ? "" : " \(index)"
+            let name = ext.isEmpty ? base + suffix : base + suffix + "." + ext
+            let candidate = directory.appendingPathComponent(name)
+            if !fileManager.fileExists(atPath: candidate.path) { return candidate }
+        }
+        return directory.appendingPathComponent(UUID().uuidString + (ext.isEmpty ? "" : "." + ext))
+    }
+
+    private func uniqueDirectory(in parent: URL, baseName: String) -> URL {
+        for index in 1...10_000 {
+            let suffix = index == 1 ? "" : " \(index)"
+            let candidate = parent.appendingPathComponent(baseName + suffix, isDirectory: true)
+            if !fileManager.fileExists(atPath: candidate.path) { return candidate }
+        }
+        return parent.appendingPathComponent(UUID().uuidString, isDirectory: true)
     }
 
     private func expand(_ path: String) -> String {
         (path as NSString).expandingTildeInPath
     }
 
-    // MARK: - 菜单项构建
-
-    private func makeNewFileItem(cfg: FinderSyncConfig) -> NSMenuItem {
-        let item = NSMenuItem(title: "新建文件", action: nil, keyEquivalent: "")
-        let sub = NSMenu(title: "")
-        let entries: [(key: String, title: String, fileName: String, template: String?)] = [
-            ("xlsx", "Microsoft Excel 工作簿", "未命名.xlsx", "Empty.xlsx"),
-            ("docx", "Microsoft Word 文档", "未命名.docx", "Empty.docx"),
-            ("pptx", "Microsoft PowerPoint 演示文稿", "未命名.pptx", "Empty.pptx"),
-            ("txt", "文本文档", "未命名.txt", nil),
-            ("md", "Markdown", "未命名.md", nil),
-            ("empty", "空文件", "未命名", nil)
-        ]
-        for e in entries where (cfg.newFileTemplates[e.key] ?? false) {
-            let mi = NSMenuItem(title: e.title, action: #selector(createNewFile(_:)), keyEquivalent: "")
-            mi.target = self
-            mi.representedObject = NewFileRequest(fileName: e.fileName, template: e.template)
-            sub.addItem(mi)
-        }
-        if sub.items.isEmpty {
-            let none = NSMenuItem(title: "（未启用任何模板）", action: nil, keyEquivalent: "")
-            none.isEnabled = false
-            sub.addItem(none)
-        }
-        item.submenu = sub
-        return item
+    private func writePasteboard(_ string: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(string, forType: .string)
     }
 
-    private func makeCopyItem(cfg: FinderSyncConfig, move: Bool) -> NSMenuItem {
-        let title = move ? "移动到" : "复制到"
-        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        let sub = NSMenu(title: "")
-        let hasSelection = !selectedURLs().isEmpty
-        if cfg.favoriteDirs.isEmpty {
-            let none = NSMenuItem(title: "（无收藏目录）", action: nil, keyEquivalent: "")
-            none.isEnabled = false
-            sub.addItem(none)
-        }
-        for fav in cfg.favoriteDirs {
-            let mi = NSMenuItem(title: fav.name, action: #selector(copyMoveTo(_:)), keyEquivalent: "")
-            mi.target = self
-            mi.representedObject = CopyMoveRequest(destPath: expand(fav.path), move: move)
-            mi.isEnabled = hasSelection
-            sub.addItem(mi)
-        }
-        item.submenu = sub
-        return item
-    }
-
-    private func makeFavoritesOpenItem(cfg: FinderSyncConfig) -> NSMenuItem {
-        let item = NSMenuItem(title: "常用目录", action: nil, keyEquivalent: "")
-        let sub = NSMenu(title: "")
-        if cfg.favoriteDirs.isEmpty {
-            let none = NSMenuItem(title: "（无收藏目录）", action: nil, keyEquivalent: "")
-            none.isEnabled = false
-            sub.addItem(none)
-        }
-        for fav in cfg.favoriteDirs {
-            let mi = NSMenuItem(title: fav.name, action: #selector(openFavorite(_:)), keyEquivalent: "")
-            mi.target = self
-            mi.representedObject = expand(fav.path)
-            sub.addItem(mi)
-        }
-        item.submenu = sub
-        return item
-    }
-
-    private func makeCopyPathItem() -> NSMenuItem {
-        let mi = NSMenuItem(title: "拷贝路径", action: #selector(copyPaths), keyEquivalent: "")
-        mi.target = self
-        mi.isEnabled = !selectedURLs().isEmpty
-        return mi
-    }
-
-    private func makeAddFavoriteItem() -> NSMenuItem {
-        let mi = NSMenuItem(title: "添加到常用目录", action: #selector(addFavorite), keyEquivalent: "")
-        mi.target = self
-        return mi
-    }
-
-    private func makeHiddenItem(show: Bool) -> NSMenuItem {
-        let mi = NSMenuItem(
-            title: show ? "显示所有文件" : "隐藏所有文件",
-            action: #selector(toggleHiddenFiles(_:)),
-            keyEquivalent: ""
-        )
-        mi.target = self
-        mi.representedObject = show
-        return mi
-    }
-
-    private func makeTerminalItem() -> NSMenuItem {
-        let mi = NSMenuItem(title: "进入终端", action: #selector(openTerminal), keyEquivalent: "")
-        mi.target = self
-        return mi
-    }
-
-    private func makeOpenWithItem(cfg: FinderSyncConfig) -> NSMenuItem? {
-        guard cfg.features.openWithEnabled, !cfg.openWithApps.isEmpty else { return nil }
-        let item = NSMenuItem(title: "用…打开", action: nil, keyEquivalent: "")
-        let sub = NSMenu(title: "")
-        let hasSelection = !selectedURLs().isEmpty
-        for app in cfg.openWithApps {
-            let mi = NSMenuItem(title: app.name, action: #selector(openWithApp(_:)), keyEquivalent: "")
-            mi.target = self
-            mi.representedObject = app.bundleId
-            mi.isEnabled = hasSelection
-            sub.addItem(mi)
-        }
-        item.submenu = sub
-        return item
-    }
-
-    private func makeCopyNameItem() -> NSMenuItem {
-        let mi = NSMenuItem(title: "拷贝文件名", action: #selector(copyNames), keyEquivalent: "")
-        mi.target = self
-        mi.isEnabled = !selectedURLs().isEmpty
-        return mi
-    }
-
-    private func makeSendAliasItem() -> NSMenuItem {
-        let mi = NSMenuItem(title: "发送到桌面（替身）", action: #selector(sendAliasToDesktop), keyEquivalent: "")
-        mi.target = self
-        mi.isEnabled = !selectedURLs().isEmpty
-        return mi
-    }
-
-    private func makeCompressItem() -> NSMenuItem {
-        let mi = NSMenuItem(title: "压缩为 zip", action: #selector(compressZip), keyEquivalent: "")
-        mi.target = self
-        mi.isEnabled = !selectedURLs().isEmpty
-        return mi
-    }
-
-    private func makeExtractItem() -> NSMenuItem {
-        let mi = NSMenuItem(title: "解压到当前文件夹", action: #selector(extractHere), keyEquivalent: "")
-        mi.target = self
-        let exts = ["zip", "tar", "gz", "tgz", "7z"]
-        mi.isEnabled = selectedURLs().contains { exts.contains($0.pathExtension.lowercased()) }
-        return mi
-    }
-
-    private func makePermanentDeleteItem() -> NSMenuItem {
-        let mi = NSMenuItem(title: "彻底删除…", action: #selector(permanentDelete), keyEquivalent: "")
-        mi.target = self
-        mi.isEnabled = !selectedURLs().isEmpty
-        return mi
-    }
-
-    // MARK: - 动作
-
-    @objc private func createNewFile(_ sender: NSMenuItem) {
-        guard let req = sender.representedObject as? NewFileRequest else { return }
-        let dir = targetDir()
-        let dest = uniqueURL(in: dir, baseName: req.fileName)
-        var ok = false
-        if let template = req.template,
-           let resURL = Bundle.main.resourceURL?
-               .appendingPathComponent("Templates")
-               .appendingPathComponent(template),
-           FileManager.default.fileExists(atPath: resURL.path) {
-            ok = (try? FileManager.default.copyItem(at: resURL, to: dest)) != nil
-        } else {
-            ok = FileManager.default.createFile(atPath: dest.path, contents: nil)
-        }
-        if ok {
-            // 选中新创建的文件，方便继续操作
-            NSWorkspace.shared.activateFileViewerSelecting([dest])
-        }
-    }
-
-    @objc private func copyMoveTo(_ sender: NSMenuItem) {
-        guard let req = sender.representedObject as? CopyMoveRequest else { return }
-        let dest = URL(fileURLWithPath: req.destPath)
-        guard FileManager.default.fileExists(atPath: dest.path) else { return }
-        for src in selectedURLs() {
-            let target = uniqueURL(in: dest, baseName: src.lastPathComponent)
-            if req.move {
-                _ = try? FileManager.default.moveItem(at: src, to: target)
-            } else {
-                _ = try? FileManager.default.copyItem(at: src, to: target)
+    @discardableResult
+    private func run(executable: String, arguments: [String], failureTitle: String) -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        do {
+            try process.run()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0 else {
+                showError(title: failureTitle, message: "命令执行失败（状态码 \(process.terminationStatus)）。")
+                return false
             }
+            return true
+        } catch {
+            showError(title: failureTitle, message: error.localizedDescription)
+            return false
         }
     }
 
-    @objc private func openFavorite(_ sender: NSMenuItem) {
-        guard let path = sender.representedObject as? String else { return }
-        NSWorkspace.shared.open(URL(fileURLWithPath: path))
+    private func isProtectedDeletionTarget(_ url: URL) -> Bool {
+        let path = url.standardizedFileURL.resolvingSymlinksInPath().path
+        return Set(["/", NSHomeDirectory(), "/Applications", "/Library", "/System", "/Users", "/private"]).contains(path)
     }
 
-    @objc private func copyPaths() {
-        let urls = selectedURLs()
-        guard !urls.isEmpty else { return }
-        let text = urls.map(\.path).joined(separator: "\n")
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        pb.setString(text, forType: .string)
-    }
-
-    @objc private func addFavorite() {
-        let dir = targetDir()
-        let path = dir.path
-        var cfg = FinderSyncConfig.load()
-        guard !cfg.favoriteDirs.contains(where: { expand($0.path) == path }) else { return }
-        cfg.favoriteDirs.append(FavoriteDir(name: dir.lastPathComponent, path: path))
-        cfg.save()
-    }
-
-    @objc private func toggleHiddenFiles(_ sender: NSMenuItem) {
-        let show = (sender.representedObject as? Bool) ?? false
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/usr/bin/defaults")
-        p.arguments = ["write", "com.apple.finder", "AppleShowAllFiles", "-bool", show ? "true" : "false"]
-        try? p.run()
-        p.waitUntilExit()
-
-        let kill = Process()
-        kill.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
-        kill.arguments = ["Finder"]
-        try? kill.run()
-        kill.waitUntilExit()
-    }
-
-    @objc private func openTerminal() {
-        let dir = targetDir()
-        let ws = NSWorkspace.shared
-        if let terminal = ws.urlForApplication(withBundleIdentifier: "com.apple.Terminal") {
-            ws.open([dir], withApplicationAt: terminal, configuration: NSWorkspace.OpenConfiguration())
-        } else {
-            let p = Process()
-            p.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-            p.arguments = ["-a", "Terminal", dir.path]
-            try? p.run()
-        }
-    }
-
-    @objc private func openWithApp(_ sender: NSMenuItem) {
-        guard let bundleId = sender.representedObject as? String else { return }
-        let urls = selectedURLs()
-        guard !urls.isEmpty else { return }
-        let ws = NSWorkspace.shared
-        // 优先按 bundleId 定位；若未安装则当作绝对路径回退。
-        let appURL: URL?
-        if bundleId.hasPrefix("/"), FileManager.default.fileExists(atPath: bundleId) {
-            appURL = URL(fileURLWithPath: bundleId)
-        } else {
-            appURL = ws.urlForApplication(withBundleIdentifier: bundleId)
-        }
-        guard let appURL else { return }
-        ws.open(urls, withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration())
-    }
-
-    @objc private func copyNames() {
-        let urls = selectedURLs()
-        guard !urls.isEmpty else { return }
-        let text = urls.map { $0.lastPathComponent }.joined(separator: "\n")
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        pb.setString(text, forType: .string)
-    }
-
-    @objc private func sendAliasToDesktop() {
-        let desktop = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Desktop")
-        guard FileManager.default.fileExists(atPath: desktop.path) else { return }
-        for src in selectedURLs() {
-            let dest = uniqueURL(in: desktop, baseName: src.lastPathComponent)
-            createAlias(from: src, to: dest)
-        }
-    }
-
-    private func createAlias(from source: URL, to aliasURL: URL) {
-        guard let data = try? source.bookmarkData(
-            options: .suitableForBookmarkFile,
-            includingResourceValuesForKeys: nil,
-            relativeTo: nil
-        ) else { return }
-        try? URL.writeBookmarkData(data, to: aliasURL)
-    }
-
-    @objc private func compressZip() {
-        let urls = selectedURLs()
-        guard !urls.isEmpty else { return }
-        let dir = targetDir()
-        let base = urls.count == 1
-            ? urls[0].deletingPathExtension().lastPathComponent
-            : "归档"
-        let zipName = uniqueURL(in: dir, baseName: base + ".zip").lastPathComponent
-        let dest = dir.appendingPathComponent(zipName)
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
-        p.arguments = ["-r", "-q", dest.path] + urls.map { $0.path }
-        try? p.run()
-        p.waitUntilExit()
-    }
-
-    @objc private func extractHere() {
-        let dir = targetDir()
-        for src in selectedURLs() where ["zip", "tar", "gz", "tgz", "7z"].contains(src.pathExtension.lowercased()) {
-            if src.pathExtension.lowercased() == "7z", let sz = sevenZipURL() {
-                let p = Process()
-                p.executableURL = sz
-                p.arguments = ["x", "-y", "-o\(dir.path)", src.path]
-                try? p.run()
-                p.waitUntilExit()
-            } else {
-                let p = Process()
-                p.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-                p.arguments = ["-x", "-k", src.path, dir.path]
-                try? p.run()
-                p.waitUntilExit()
-            }
-        }
-    }
-
-    /// 若本机安装了 p7zip，返回其可执行文件 URL，否则 nil。
-    private func sevenZipURL() -> URL? {
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/usr/bin/which")
-        p.arguments = ["7z"]
-        let pipe = Pipe()
-        p.standardOutput = pipe
-        try? p.run()
-        p.waitUntilExit()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        guard let out = String(data: data, encoding: .utf8)?
-            .trimmingCharacters(in: .whitespacesAndNewlines), !out.isEmpty else { return nil }
-        return URL(fileURLWithPath: out)
-    }
-
-    @MainActor @objc private func permanentDelete() {
-        let urls = selectedURLs()
-        guard !urls.isEmpty else { return }
-        let count = urls.count
-        let names = urls.map { $0.lastPathComponent }.joined(separator: "、")
+    private func showError(title: String, message: String) {
         let alert = NSAlert()
-        alert.messageText = "彻底删除？"
-        alert.informativeText = "将永久删除 \(count) 项，不可恢复：\n\(names)"
-        alert.alertStyle = .critical
-        alert.addButton(withTitle: "删除")
-        alert.addButton(withTitle: "取消")
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
-        let fm = FileManager.default
-        for u in urls {
-            _ = try? fm.removeItem(at: u)
-        }
-    }
-
-    // MARK: - 工具
-
-    private func uniqueURL(in dir: URL, baseName: String) -> URL {
-        let ns = baseName as NSString
-        let name = ns.deletingPathExtension
-        let ext = ns.pathExtension
-        var candidate = dir.appendingPathComponent(baseName)
-        var counter = 2
-        while FileManager.default.fileExists(atPath: candidate.path) {
-            let newName = ext.isEmpty ? "\(name) \(counter)" : "\(name) \(counter).\(ext)"
-            candidate = dir.appendingPathComponent(newName)
-            counter += 1
-        }
-        return candidate
+        alert.alertStyle = .warning
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: "好")
+        alert.runModal()
     }
 }

@@ -41,6 +41,7 @@ final class AppState: ObservableObject {
     private var globalToken: Any?
     private var localToken: Any?
     private var workspaceObserverTokens: [Any] = []
+    private var hasPreparedInteractiveSession = false
     private var preparedWorkspaceMemberIDs: [UUID: Set<String>] = [:]
     /// 单一统一浮窗控制器（管理所有活跃工作区 Tab）
     private var unifiedFloatingController: WorkspaceFloatingPanelController?
@@ -55,6 +56,13 @@ final class AppState: ObservableObject {
 
     private init() {
         load()
+    }
+
+    /// NSServices 会在后台冷启动主进程。服务调用不需要扫描窗口、注册快捷键或
+    /// 创建工作区观察者；只有真正显示 Foldesk UI 时才初始化这些交互能力。
+    func prepareForInteractiveUse() {
+        guard !hasPreparedInteractiveSession else { return }
+        hasPreparedInteractiveSession = true
         refreshPermissions()
         refresh()
         registerHotkey()

@@ -44,40 +44,35 @@ open dist/Foldesk.app
 - 应用/窗口分层批量操作和安全结束工作；所有批量退出路径始终保护 Foldesk 自身
 - 权限引导、排除应用与风险确认
 
-## 访达右键服务
+## Finder 超级右键
 
-Foldesk 通过 **macOS「服务」（NSServices）** 提供访达右键能力，由主程序自身实现，
-**不需要安装或启用任何扩展**。当前共 19 项：
+Foldesk 本机版在 app 内打包原生 **Finder Sync 扩展**。Finder 右键第一层直接显示“新建文件”：
 
-- 新建文件：Excel 工作簿 / Word 文档 / PPT 演示文稿 / 文本文档 / Markdown（生成在当前访达目录，为真 Microsoft Office 文档）
-- 复制路径 / 复制文件名（需选中文件）
-- 压缩为 zip / 解压到此处
-- 彻底删除（弹窗二次确认，不进回收站）
-- 复制到常用目录 1 / 2 / 3（需选中文件，目标目录在「右键服务」设置页配置）
-- 移动到常用目录 1 / 2 / 3（需选中文件，目标目录同上）
-- 用指定 App 打开 1 / 2 / 3（需选中文件，App 在「右键服务」设置页配置；该 App 未安装时自动用系统默认程序打开）
+- 新建 Word / Excel / PowerPoint / RTF / 文本 / Markdown / CSV / JSON / HTML / XML / 空文件
+- 新建只在当前文件夹创建文件，不启动 Word、WPS、Finder 窗口或 Foldesk 主界面
+- 复制路径 / 文件名、压缩 ZIP / 解压 ZIP、带二次确认的彻底删除
+- 复制 / 移动到常用目录、用指定 App 打开、发送替身到桌面
+- 在终端中打开当前目录、快速打开常用目录
+
+Microsoft Office 和 WPS 使用相同的 `.docx`、`.xlsx`、`.pptx` 标准文件，不需要分别创建两套菜单。三种 Office 文件来自内置的真实 OOXML 空白模板；模板缺失时操作会失败并提示，不会生成损坏的 0 字节文件。同名文件自动使用“未命名 2”等名称，绝不覆盖已有文件。
+
+旧版 25 项 macOS「服务」（NSServices）仍保留为兼容入口，其中 11 项新建类型与扩展一致。
 
 常用目录与指定 App 在 Foldesk 主界面「右键服务」设置页里增删改，改动即时保存到
 `~/Library/Application Support/Foldesk/findersync.json`，下次右键直接生效，无需重建。
 
 ### 启用步骤
 
-1. 构建：`chmod +x scripts/build-app.sh && ./scripts/build-app.sh`
-2. 把 `dist/Foldesk.app` 放到 `/Applications`，然后打开一次——系统在此时注册服务。
-3. 在访达中右键文件 / 文件夹（或窗口空白处）→ **「服务」** → 选择 Foldesk 动作。
-4. 如需把常用项提到右键顶层：**系统设置 → 键盘 → 键盘快捷键 → 服务**。
+1. 构建并安装：`chmod +x scripts/*.sh && ./scripts/install-local.sh`
+2. 安装脚本会把旧副本移到废纸篓，只保留 `/Applications/Foldesk.app`，然后刷新注册。
+3. 打开 Foldesk →「超级右键」→「打开 Finder 扩展设置」，启用“Foldesk 右键菜单”。
+4. 在 Finder 当前文件夹空白处右键 → **新建文件**。
 
 **已知限制**
 
-- 服务项声明了 `NSRequiredContext = com.apple.finder`，因此**只在访达中出现**，
-  桌面右键和其他应用的右键菜单不会显示。
-- 服务菜单由系统缓存。若新构建后右键看不到，先退出应用重新打开；
-  仍未出现可执行 `/System/Library/CoreServices/pbs -flush` 或重新登录账户。
-- Excel / Word / PPT 模板为内置空白文件，无需安装 Office 即可生成可正常打开的文档。
-
-### 关于 Finder Sync 扩展（已放弃）
-
-`Sources/FoldeskFinderSync/` 里保留了一份 Finder Sync 扩展实现，但**不会被打包进 app**：
-该类型扩展必须用 Developer ID 签名并通过公证才能被系统加载，自签环境下
-`pluginkit` 会拒绝注册，嵌进去只会让「系统设置 → 扩展 → 访达」出现一个永远勾不上的条目。
-源码保留是为了将来拿到证书后可以直接启用。**当前生效的右键能力一律走上面的 NSServices。**
+- Finder Sync 菜单仅在 Finder 中出现；其他应用的右键由对应应用控制。
+- 目前监听用户主目录（包括桌面、文稿、下载和子目录）以及 `/Volumes` 下的卷；系统受保护目录不支持新建。
+- 本机开发签名通过目录权限例外实现直接写入；对外分发时应改用受信的后台帮助进程或用户授权的安全作用域，不应将该例外视为 App Store 方案。
+- 系统只允许用户在系统扩展管理界面启用 Finder 扩展；安装脚本不会强行重启 Finder。
+- 本机 ad-hoc 构建仅供本机开发使用。对外分发仍需要合适的 Apple 签名和公证。
+- Finder Sync 原本面向文件同步类扩展；Foldesk 的通用菜单可用于本机，但提交 Mac App Store 前需要单独评估审核政策。

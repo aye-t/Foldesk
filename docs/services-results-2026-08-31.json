@@ -1,0 +1,222 @@
+[
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 0.91649997234344482,
+    "service" : "复制路径",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 0.74738407135009766,
+    "service" : "复制文件名",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.1076689958572388,
+    "service" : "新建 Excel",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.2054390907287598,
+    "service" : "新建 Word",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.2559319734573364,
+    "service" : "新建 PPT",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.2447329759597778,
+    "service" : "新建文本",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.2050899267196655,
+    "service" : "新建 Markdown",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.0594578981399536,
+    "service" : "压缩为 zip",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.1467970609664917,
+    "service" : "解压到此处",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.0208100080490112,
+    "service" : "复制到常用目录 1",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 0.85094499588012695,
+    "service" : "移动到常用目录 1",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 0.92636001110076904,
+    "service" : "复制到常用目录 2",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.1082710027694702,
+    "service" : "移动到常用目录 2",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.207880973815918,
+    "service" : "复制到常用目录 3",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.0667999982833862,
+    "service" : "移动到常用目录 3",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.5871349573135376,
+    "service" : "用指定 App 打开 1",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.3298430442810059,
+    "service" : "用指定 App 打开 2",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.4512280225753784,
+    "service" : "用指定 App 打开 3",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 0.99882090091705322,
+    "service" : "彻底删除",
+    "windows" : [
+
+    ]
+  },
+  {
+    "dispatched" : true,
+    "passed" : true,
+    "remainingProviders" : 0,
+    "resultMatched" : true,
+    "seconds" : 1.0373669862747192,
+    "service" : "彻底删除",
+    "windows" : [
+
+    ]
+  }
+]

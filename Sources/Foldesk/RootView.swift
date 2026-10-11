@@ -51,12 +51,20 @@ struct RootView: View {
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
+        .onAppear {
+            // 避免在 SwiftUI 首轮 body 更新过程中同步发布大量状态。
+            DispatchQueue.main.async {
+                state.prepareForInteractiveUse()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .focusWindow)) { note in
             if let window = note.object as? WindowItem { state.manager.focus(window) }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            state.refreshPermissions()
-            if state.accessibilityGranted { state.refresh() }
+            DispatchQueue.main.async {
+                state.refreshPermissions()
+                if state.accessibilityGranted { state.refresh() }
+            }
         }
         .onReceive(Timer.publish(every: 1.5, on: .main, in: .common).autoconnect()) { _ in
             state.refreshPermissions()
@@ -83,7 +91,17 @@ struct SidebarView: View {
             }
             .padding(18)
 
-            List(selection: $state.selection) {
+            List(selection: Binding(
+                get: { state.selection },
+                set: { selection in
+                    // AppKit 的侧栏回调可能发生在 SwiftUI 更新事务中。
+                    // 延后发布共享状态，避免切页时触发重入更新警告。
+                    DispatchQueue.main.async {
+                        guard state.selection != selection else { return }
+                        state.selection = selection
+                    }
+                }
+            )) {
                 Section {
                     ForEach(SidebarItem.allCases) { item in
                         HStack {
